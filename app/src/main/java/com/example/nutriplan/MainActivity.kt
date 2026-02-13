@@ -23,10 +23,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val prefs = remember { LanguagePreferences(applicationContext) }
-
             val lang by prefs.languageCodeFlow.collectAsState(initial = "pt")
             val themeMode by prefs.themeModeFlow.collectAsState(initial = "light")
-
             val isDark = themeMode == "dark"
 
             NutriPlanTheme(

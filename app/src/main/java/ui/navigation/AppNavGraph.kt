@@ -79,31 +79,21 @@ fun AppNavGraph(
             )
         }
 
-        // Chat List
         composable(Routes.CHAT_LIST) {
             ChatListScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
                 onConversationClick = { conversationId ->
-                    navController.navigate(
-                        Routes.chatDetail(conversationId, "Nutricionista")
-                    )
+                    navController.navigate(Routes.chatDetail(conversationId, "Nutricionista"))
                 },
-                onNewChatClick = {
-                    // TODO: Implementar tela de novo chat
-                },
-                onBackClick = {
-                    navController.popBackStack()
-                },
+                onNewChatClick = { /* TODO */ },
+                onBackClick = { navController.popBackStack() },
                 onThemeToggle = {
-                    scope.launch {
-                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
-                    }
+                    scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
                 }
             )
         }
 
-        // Chat Detail
         composable(
             route = Routes.CHAT_DETAIL,
             arguments = listOf(
@@ -119,7 +109,9 @@ fun AppNavGraph(
                 nutritionistName = participantName,
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
-                onBackClick = {
+                onBackClick = { navController.popBackStack() },
+                onArchiveClick = {
+                    // Lógica simulada: volta para a lista
                     navController.popBackStack()
                 }
             )
