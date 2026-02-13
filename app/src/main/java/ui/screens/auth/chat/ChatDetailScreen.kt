@@ -1,25 +1,21 @@
-package com.example.nutriplan.ui.screens.auth.chat
+package ui.screens.auth.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.nutriplan.model.Message
-import com.example.nutriplan.model.MessageType
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -27,65 +23,61 @@ import java.util.*
 @Composable
 fun ChatDetailScreen(
     conversationId: String,
-    participantName: String,
-    currentLanguage: String,
-    isDarkTheme: Boolean,
-    onBackClick: () -> Unit
+    nutritionistName: String,
+    onBackClick: () -> Unit,
+    currentLanguage: String = "pt",
+    isDarkTheme: Boolean = false
 ) {
-    var messageText by remember { mutableStateOf("") }
-    val listState = rememberLazyListState()
-
-    // Mensagens mockadas para demonstração
+    // Lista de mensagens de exemplo - substituir por dados reais do Firebase
     val messages = remember {
         mutableStateListOf(
             Message(
                 id = "1",
                 conversationId = conversationId,
-                senderId = "other",
-                text = "Olá! Como posso ajudar com sua dieta hoje?",
+                senderId = "user1",
+                text = "Olá! Gostaria de informações sobre dieta.",
                 timestamp = System.currentTimeMillis() - 3600000,
-                isRead = true,
-                isSentByMe = false
+                isSentByMe = true
             ),
             Message(
                 id = "2",
                 conversationId = conversationId,
-                senderId = "me",
-                text = "Oi! Gostaria de saber sobre alimentos ricos em proteína.",
-                timestamp = System.currentTimeMillis() - 3500000,
-                isRead = true,
-                isSentByMe = true
+                senderId = "nutritionist1",
+                text = "Olá! Claro, vou te ajudar. Qual é seu objetivo?",
+                timestamp = System.currentTimeMillis() - 3000000,
+                isSentByMe = false
             ),
             Message(
                 id = "3",
                 conversationId = conversationId,
-                senderId = "other",
-                text = "Claro! Alguns alimentos ricos em proteína são: frango, peixe, ovos, feijão, lentilha e quinoa. Você tem alguma restrição alimentar?",
-                timestamp = System.currentTimeMillis() - 3400000,
-                isRead = true,
-                isSentByMe = false
+                senderId = "user1",
+                text = "Quero perder peso de forma saudável.",
+                timestamp = System.currentTimeMillis() - 2400000,
+                isSentByMe = true
             ),
             Message(
                 id = "4",
                 conversationId = conversationId,
-                senderId = "me",
-                text = "Não como carne vermelha, mas consumo frango e peixe.",
-                timestamp = System.currentTimeMillis() - 3300000,
-                isRead = true,
-                isSentByMe = true
+                senderId = "nutritionist1",
+                text = "Ótimo! Vamos montar um plano alimentar adequado para você.",
+                timestamp = System.currentTimeMillis() - 1800000,
+                isSentByMe = false
             ),
             Message(
                 id = "5",
                 conversationId = conversationId,
-                senderId = "other",
-                text = "Perfeito! Vou criar um plano alimentar focado em frango, peixe e fontes vegetais de proteína.",
-                timestamp = System.currentTimeMillis() - 3200000,
-                isRead = false,
-                isSentByMe = false
+                senderId = "user1",
+                text = "Perfeito! Quando podemos começar?",
+                timestamp = System.currentTimeMillis() - 600000,
+                isSentByMe = true
             )
         )
     }
 
+    var messageText by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+
+    // Scroll automático para a última mensagem
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
@@ -95,70 +87,50 @@ fun ChatDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            participantName,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            "Online",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
+                title = { Text(nutritionistName) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, "Voltar")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Chamada de vídeo */ }) {
-                        Icon(Icons.Default.Call, "Ligar")
-                    }
-                    IconButton(onClick = { /* Mais opções */ }) {
-                        Icon(Icons.Default.MoreVert, "Menu")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar"
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         },
         bottomBar = {
-            ChatInputBar(
+            MessageInputBar(
                 messageText = messageText,
                 onMessageTextChange = { messageText = it },
-                onSendMessage = {
+                onSendClick = {
                     if (messageText.isNotBlank()) {
                         messages.add(
                             Message(
                                 id = UUID.randomUUID().toString(),
                                 conversationId = conversationId,
-                                senderId = "me",
+                                senderId = "currentUser",
                                 text = messageText,
                                 timestamp = System.currentTimeMillis(),
-                                isRead = false,
                                 isSentByMe = true
                             )
                         )
                         messageText = ""
                     }
-                },
-                onAttachFile = { /* Anexar arquivo */ }
+                }
             )
         }
     ) { paddingValues ->
         LazyColumn(
-            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
+                .padding(horizontal = 16.dp),
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(messages) { message ->
                 MessageBubble(message = message)
@@ -171,147 +143,100 @@ fun ChatDetailScreen(
 fun MessageBubble(message: Message) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.isSentByMe) Arrangement.End else Arrangement.Start
-    ) {
-        if (!message.isSentByMe) {
-            // Avatar do remetente
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "N",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
+        horizontalArrangement = if (message.isSentByMe) {
+            Arrangement.End
+        } else {
+            Arrangement.Start
         }
-
-        Column(
+    ) {
+        Card(
             modifier = Modifier.widthIn(max = 280.dp),
-            horizontalAlignment = if (message.isSentByMe) Alignment.End else Alignment.Start
-        ) {
-            Surface(
-                shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (message.isSentByMe) 16.dp else 4.dp,
-                    bottomEnd = if (message.isSentByMe) 4.dp else 16.dp
-                ),
-                color = if (message.isSentByMe) {
-                    MaterialTheme.colorScheme.primary
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomStart = if (message.isSentByMe) 16.dp else 4.dp,
+                bottomEnd = if (message.isSentByMe) 4.dp else 16.dp
+            ),
+            colors = CardDefaults.cardColors(
+                containerColor = if (message.isSentByMe) {
+                    MaterialTheme.colorScheme.primaryContainer
                 } else {
-                    MaterialTheme.colorScheme.surfaceVariant
+                    MaterialTheme.colorScheme.secondaryContainer
                 }
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp)
             ) {
                 Text(
                     text = message.text,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    fontSize = 15.sp,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = if (message.isSentByMe) {
-                        MaterialTheme.colorScheme.onPrimary
+                        MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        MaterialTheme.colorScheme.onSecondaryContainer
                     }
                 )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = if (message.isSentByMe) Arrangement.End else Arrangement.Start
-            ) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = SimpleDateFormat("HH:mm", Locale.getDefault())
-                        .format(Date(message.timestamp)),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = formatTime(message.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (message.isSentByMe) {
+                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    } else {
+                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                    }
                 )
-
-                if (message.isSentByMe) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = if (message.isRead) Icons.Default.Done else Icons.Default.Check,
-                        contentDescription = if (message.isRead) "Lido" else "Enviado",
-                        modifier = Modifier.size(14.dp),
-                        tint = if (message.isRead) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
             }
         }
     }
 }
 
 @Composable
-fun ChatInputBar(
+fun MessageInputBar(
     messageText: String,
     onMessageTextChange: (String) -> Unit,
-    onSendMessage: () -> Unit,
-    onAttachFile: () -> Unit
+    onSendClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp
+        shadowElevation = 8.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Botão de anexo
-            IconButton(onClick = onAttachFile) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Anexar",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            // Campo de texto
-            TextField(
+            OutlinedTextField(
                 value = messageText,
                 onValueChange = onMessageTextChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Mensagem...") },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
+                placeholder = { Text("Digite sua mensagem...") },
                 shape = RoundedCornerShape(24.dp),
                 maxLines = 4
             )
-
             Spacer(modifier = Modifier.width(8.dp))
-
-            // Botão de enviar
             IconButton(
-                onClick = onSendMessage,
+                onClick = onSendClick,
                 enabled = messageText.isNotBlank()
             ) {
                 Icon(
-                    Icons.Default.Send,
+                    imageVector = Icons.AutoMirrored.Filled.Send,
                     contentDescription = "Enviar",
                     tint = if (messageText.isNotBlank()) {
                         MaterialTheme.colorScheme.primary
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     }
                 )
             }
         }
     }
+}
+
+private fun formatTime(timestamp: Long): String {
+    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return sdf.format(Date(timestamp))
 }

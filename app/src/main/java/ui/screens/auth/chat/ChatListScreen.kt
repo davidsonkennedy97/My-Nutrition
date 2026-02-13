@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,7 +32,7 @@ fun ChatListScreen(
     onNewChatClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Conversas", "Arquivadas", "Histórico")
 
     // Dados mockados para demonstração
@@ -39,36 +40,55 @@ fun ChatListScreen(
         listOf(
             Conversation(
                 id = "1",
+                userId = "user1",
+                nutritionistId = "nutr1",
                 participantName = "Dr. João Silva",
                 lastMessage = "Olá, tudo bem?",
                 lastMessageTime = System.currentTimeMillis() - 3600000,
+                lastMessageTimestamp = System.currentTimeMillis() - 3600000,
                 unreadCount = 2,
                 isOnline = true,
-                isPinned = true
+                isPinned = true,
+                isArchived = false
             ),
             Conversation(
                 id = "2",
+                userId = "user1",
+                nutritionistId = "nutr2",
                 participantName = "Nutricionista Maria",
                 lastMessage = "Você: Obrigada pela ajuda!",
                 lastMessageTime = System.currentTimeMillis() - 86400000,
+                lastMessageTimestamp = System.currentTimeMillis() - 86400000,
                 unreadCount = 0,
-                isOnline = false
+                isOnline = false,
+                isPinned = false,
+                isArchived = false
             ),
             Conversation(
                 id = "3",
+                userId = "user1",
+                nutritionistId = "nutr3",
                 participantName = "Grupo Dieta",
                 lastMessage = "Pedro: Reunião amanhã às...",
                 lastMessageTime = System.currentTimeMillis() - 7200000,
+                lastMessageTimestamp = System.currentTimeMillis() - 7200000,
                 unreadCount = 5,
-                isOnline = true
+                isOnline = true,
+                isPinned = false,
+                isArchived = false
             ),
             Conversation(
                 id = "4",
+                userId = "user1",
+                nutritionistId = "nutr4",
                 participantName = "Suporte",
                 lastMessage = "Seu ticket foi resolvido",
                 lastMessageTime = System.currentTimeMillis() - 172800000,
+                lastMessageTimestamp = System.currentTimeMillis() - 172800000,
                 unreadCount = 0,
-                isOnline = false
+                isOnline = false,
+                isPinned = false,
+                isArchived = false
             )
         )
     }
@@ -77,10 +97,15 @@ fun ChatListScreen(
         listOf(
             Conversation(
                 id = "5",
+                userId = "user1",
+                nutritionistId = "nutr5",
                 participantName = "Carlos Antigo",
                 lastMessage = "Mensagem arquivada",
                 lastMessageTime = System.currentTimeMillis() - 604800000,
+                lastMessageTimestamp = System.currentTimeMillis() - 604800000,
                 unreadCount = 0,
+                isOnline = false,
+                isPinned = false,
                 isArchived = true
             )
         )
@@ -98,15 +123,18 @@ fun ChatListScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, "Voltar")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar"
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { /* Busca */ }) {
-                        Icon(Icons.Default.Search, "Buscar")
+                        Icon(Icons.Default.Search, contentDescription = "Buscar")
                     }
                     IconButton(onClick = { /* Menu */ }) {
-                        Icon(Icons.Default.MoreVert, "Menu")
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -119,7 +147,7 @@ fun ChatListScreen(
                 onClick = onNewChatClick,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Edit, "Nova conversa")
+                Icon(Icons.Default.Edit, contentDescription = "Nova conversa")
             }
         }
     ) { paddingValues ->
@@ -151,7 +179,7 @@ fun ChatListScreen(
             val displayList = when (selectedTab) {
                 0 -> conversations.filter { !it.isArchived }
                 1 -> archivedConversations
-                2 -> conversations // Histórico completo
+                2 -> conversations + archivedConversations // Histórico completo
                 else -> conversations
             }
 
@@ -191,7 +219,7 @@ fun ChatListItem(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = conversation.participantName.first().uppercase(),
+                text = conversation.participantName.firstOrNull()?.uppercase() ?: "?",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -293,7 +321,7 @@ fun ChatListItem(
     }
 }
 
-fun formatTimestamp(timestamp: Long): String {
+private fun formatTimestamp(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
 
