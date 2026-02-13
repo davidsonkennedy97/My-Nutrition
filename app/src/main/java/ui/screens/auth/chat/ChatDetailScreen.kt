@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nutriplan.model.Message
 import java.text.SimpleDateFormat
 import java.util.*
@@ -26,58 +27,20 @@ fun ChatDetailScreen(
     nutritionistName: String,
     onBackClick: () -> Unit,
     currentLanguage: String = "pt",
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    viewModel: ChatViewModel = viewModel()
 ) {
-    // Lista de mensagens de exemplo - substituir por dados reais do Firebase
-    val messages = remember {
-        mutableStateListOf(
-            Message(
-                id = "1",
-                conversationId = conversationId,
-                senderId = "user1",
-                text = "Olá! Gostaria de informações sobre dieta.",
-                timestamp = System.currentTimeMillis() - 3600000,
-                isSentByMe = true
-            ),
-            Message(
-                id = "2",
-                conversationId = conversationId,
-                senderId = "nutritionist1",
-                text = "Olá! Claro, vou te ajudar. Qual é seu objetivo?",
-                timestamp = System.currentTimeMillis() - 3000000,
-                isSentByMe = false
-            ),
-            Message(
-                id = "3",
-                conversationId = conversationId,
-                senderId = "user1",
-                text = "Quero perder peso de forma saudável.",
-                timestamp = System.currentTimeMillis() - 2400000,
-                isSentByMe = true
-            ),
-            Message(
-                id = "4",
-                conversationId = conversationId,
-                senderId = "nutritionist1",
-                text = "Ótimo! Vamos montar um plano alimentar adequado para você.",
-                timestamp = System.currentTimeMillis() - 1800000,
-                isSentByMe = false
-            ),
-            Message(
-                id = "5",
-                conversationId = conversationId,
-                senderId = "user1",
-                text = "Perfeito! Quando podemos começar?",
-                timestamp = System.currentTimeMillis() - 600000,
-                isSentByMe = true
-            )
-        )
-    }
-
+    val messages by viewModel.messages.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    // Scroll automático para a última mensagem
+    // Carregar mensagens quando a tela abrir
+    LaunchedEffect(conversationId) {
+        viewModel.loadMessages(conversationId)
+    }
+
+    // Scroll automático para a última mensagem quando chegarem novas
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
@@ -108,32 +71,29 @@ fun ChatDetailScreen(
                 onMessageTextChange = { messageText = it },
                 onSendClick = {
                     if (messageText.isNotBlank()) {
-                        messages.add(
-                            Message(
-                                id = UUID.randomUUID().toString(),
-                                conversationId = conversationId,
-                                senderId = "currentUser",
-                                text = messageText,
-                                timestamp = System.currentTimeMillis(),
-                                isSentByMe = true
-                            )
-                        )
+                        viewModel.sendMessage(conversationId, messageText)
                         messageText = ""
                     }
                 }
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            state = listState,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(messages) { message ->
-                MessageBubble(message = message)
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (isLoading && messages.isEmpty()) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    items(messages) { message ->
+                        MessageBubble(message = message)
+                    }
+                }
             }
         }
     }
@@ -143,11 +103,7 @@ fun ChatDetailScreen(
 fun MessageBubble(message: Message) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.isSentByMe) {
-            Arrangement.End
-        } else {
-            Arrangement.Start
-        }
+        horizontalArrangement = if (message.isSentByMe) Arrangement.End else Arrangement.Start
     ) {
         Card(
             modifier = Modifier.widthIn(max = 280.dp),
@@ -165,9 +121,7 @@ fun MessageBubble(message: Message) {
                 }
             )
         ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = message.text,
                     style = MaterialTheme.typography.bodyMedium,
@@ -237,6 +191,7 @@ fun MessageInputBar(
 }
 
 private fun formatTime(timestamp: Long): String {
+    if (timestamp == 0L) return ""
     val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }

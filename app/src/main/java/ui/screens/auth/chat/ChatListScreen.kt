@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nutriplan.model.Conversation
+import com.example.nutriplan.ui.theme.PrimaryGreen
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,14 +31,20 @@ fun ChatListScreen(
     isDarkTheme: Boolean,
     onConversationClick: (String) -> Unit,
     onNewChatClick: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onThemeToggle: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Conversas", "Arquivadas", "Histórico")
+    var searchQuery by remember { mutableStateOf("") }
+    var showSearchBar by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var conversationToDelete by remember { mutableStateOf<String?>(null) }
 
-    // Dados mockados para demonstração
-    val conversations = remember {
-        listOf(
+    val tabs = listOf("Conversas", "Arquivadas", "Histórico")
+    val backgroundColor = if (isDarkTheme) Color(0xFF1C1C1C) else Color(0xFFFAF8F3)
+
+    val allConversations = remember {
+        mutableStateListOf(
             Conversation(
                 id = "1",
                 userId = "user1",
@@ -89,12 +96,7 @@ fun ChatListScreen(
                 isOnline = false,
                 isPinned = false,
                 isArchived = false
-            )
-        )
-    }
-
-    val archivedConversations = remember {
-        listOf(
+            ),
             Conversation(
                 id = "5",
                 userId = "user1",
@@ -112,42 +114,107 @@ fun ChatListScreen(
     }
 
     Scaffold(
+        containerColor = backgroundColor,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Chat",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar"
-                        )
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                color = PrimaryGreen
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier.align(Alignment.CenterStart),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (showSearchBar) {
+                            IconButton(onClick = {
+                                showSearchBar = false
+                                searchQuery = ""
+                            }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Voltar",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = {
+                                    Text(
+                                        "Buscar conversas...",
+                                        color = Color.White.copy(alpha = 0.7f)
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    cursorColor = Color.White
+                                ),
+                                singleLine = true
+                            )
+                        } else {
+                            IconButton(onClick = onBackClick) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Voltar",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                            Text(
+                                text = "Chat",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontWeight = FontWeight.Normal
+                            )
+                        }
                     }
-                },
-                actions = {
-                    IconButton(onClick = { /* Busca */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+
+                    if (!showSearchBar) {
+                        Row(
+                            modifier = Modifier.align(Alignment.CenterEnd),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { showSearchBar = true }) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = "Buscar",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            IconButton(onClick = onThemeToggle) {
+                                Icon(
+                                    imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                    contentDescription = "Toggle theme",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
                     }
-                    IconButton(onClick = { /* Menu */ }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
+                }
+            }
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNewChatClick,
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = PrimaryGreen
             ) {
-                Icon(Icons.Default.Edit, contentDescription = "Nova conversa")
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Nova conversa",
+                    tint = Color.White
+                )
             }
         }
     ) { paddingValues ->
@@ -156,10 +223,10 @@ fun ChatListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Tabs
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = backgroundColor,
+                contentColor = if (isDarkTheme) Color.White else Color.Black
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -168,65 +235,116 @@ fun ChatListScreen(
                         text = {
                             Text(
                                 title,
-                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selectedTab == index) PrimaryGreen else (if (isDarkTheme) Color.White else Color.Black)
                             )
                         }
                     )
                 }
             }
 
-            // Lista de conversas
-            val displayList = when (selectedTab) {
-                0 -> conversations.filter { !it.isArchived }
-                1 -> archivedConversations
-                2 -> conversations + archivedConversations // Histórico completo
-                else -> conversations
+            val filteredConversations = allConversations.filter { conversation ->
+                val matchesSearch = searchQuery.isEmpty() ||
+                        conversation.participantName.contains(searchQuery, ignoreCase = true) ||
+                        conversation.lastMessage.contains(searchQuery, ignoreCase = true)
+                val matchesTab = when (selectedTab) {
+                    0 -> !conversation.isArchived
+                    1 -> conversation.isArchived
+                    else -> true
+                }
+                matchesSearch && matchesTab
             }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(displayList) { conversation ->
+                items(filteredConversations) { conversation ->
                     ChatListItem(
                         conversation = conversation,
-                        onClick = { onConversationClick(conversation.id) }
+                        isDarkTheme = isDarkTheme,
+                        onClick = { onConversationClick(conversation.id) },
+                        onDelete = {
+                            conversationToDelete = conversation.id
+                            showDeleteDialog = true
+                        },
+                        onArchive = {
+                            val index = allConversations.indexOfFirst { it.id == conversation.id }
+                            if (index != -1) {
+                                allConversations[index] = conversation.copy(
+                                    isArchived = !conversation.isArchived
+                                )
+                            }
+                        }
                     )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(
+                        color = if (isDarkTheme) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.1f)
+                    )
                 }
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Deletar conversa") },
+            text = { Text("Tem certeza que deseja deletar esta conversa?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        conversationToDelete?.let { id ->
+                            allConversations.removeIf { it.id == id }
+                        }
+                        showDeleteDialog = false
+                        conversationToDelete = null
+                    }
+                ) {
+                    Text("Deletar", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 
 @Composable
 fun ChatListItem(
     conversation: Conversation,
-    onClick: () -> Unit
+    isDarkTheme: Boolean,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    onArchive: () -> Unit
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+    val backgroundColor = if (isDarkTheme) Color(0xFF1C1C1C) else Color(0xFFFAF8F3)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .background(backgroundColor)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar
         Box(
             modifier = Modifier
                 .size(56.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
+                .background(PrimaryGreen.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = conversation.participantName.firstOrNull()?.uppercase() ?: "?",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = PrimaryGreen
             )
         }
 
-        // Status online (bolinha verde)
         if (conversation.isOnline) {
             Box(
                 modifier = Modifier
@@ -239,7 +357,6 @@ fun ChatListItem(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Conteúdo
         Column(
             modifier = Modifier.weight(1f)
         ) {
@@ -251,26 +368,24 @@ fun ChatListItem(
                         Icons.Default.Star,
                         contentDescription = "Fixado",
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = PrimaryGreen
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                 }
-
                 Text(
                     text = conversation.participantName,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    color = if (isDarkTheme) Color.White else Color.Black
                 )
-
                 Spacer(modifier = Modifier.width(8.dp))
-
                 Text(
                     text = formatTimestamp(conversation.lastMessageTime),
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isDarkTheme) Color.White.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.6f)
                 )
             }
 
@@ -282,26 +397,25 @@ fun ChatListItem(
                 Text(
                     text = conversation.lastMessage,
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isDarkTheme) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-
                 if (conversation.unreadCount > 0) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
                             .size(24.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
+                            .background(PrimaryGreen),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = conversation.unreadCount.toString(),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = Color.White
                         )
                     }
                 }
@@ -310,29 +424,65 @@ fun ChatListItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // Menu de opções
-        IconButton(onClick = { /* Menu de opções */ }) {
-            Icon(
-                Icons.Default.MoreVert,
-                contentDescription = "Opções",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Box {
+            IconButton(onClick = { showMenu = true }) {
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = "Opções",
+                    tint = if (isDarkTheme) Color.White else Color.Black
+                )
+            }
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+                containerColor = if (isDarkTheme) Color(0xFF2C2C2C) else Color.White
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            if (conversation.isArchived) "Desarquivar" else "Arquivar",
+                            color = if (isDarkTheme) Color.White else Color.Black
+                        )
+                    },
+                    onClick = {
+                        onArchive()
+                        showMenu = false
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Archive,
+                            contentDescription = null,
+                            tint = if (isDarkTheme) Color.White else Color.Black
+                        )
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Deletar", color = Color.Red) },
+                    onClick = {
+                        onDelete()
+                        showMenu = false
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = Color.Red
+                        )
+                    }
+                )
+            }
         }
     }
 }
 
-private fun formatTimestamp(timestamp: Long): String {
+fun formatTimestamp(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
-
     return when {
-        diff < 86400000 -> { // Menos de 24h
-            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
-        }
-        diff < 172800000 -> "Ontem" // Menos de 48h
-        diff < 604800000 -> { // Menos de 7 dias
-            SimpleDateFormat("EEE", Locale("pt", "BR")).format(Date(timestamp))
-        }
+        diff < 86400000 -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
+        diff < 172800000 -> "Ontem"
+        diff < 604800000 -> SimpleDateFormat("EEE", Locale("pt", "BR")).format(Date(timestamp))
         else -> SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date(timestamp))
     }
 }

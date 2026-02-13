@@ -1,18 +1,22 @@
 package com.example.nutriplan.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.nutriplan.core.LanguagePreferences
 import com.example.nutriplan.ui.screens.auth.ForgotPasswordScreen
 import com.example.nutriplan.ui.screens.auth.LoginScreen
 import com.example.nutriplan.ui.screens.auth.RegisterScreen
 import com.example.nutriplan.ui.screens.home.HomeScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavGraph(
@@ -21,6 +25,9 @@ fun AppNavGraph(
     isDarkTheme: Boolean
 ) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val prefs = LanguagePreferences(context.applicationContext)
+    val scope = rememberCoroutineScope()
 
     NavHost(
         navController = navController,
@@ -33,9 +40,11 @@ fun AppNavGraph(
                 isDarkTheme = isDarkTheme,
                 onGoToRegister = { navController.navigate(Routes.REGISTER) },
                 onGoToForgotPassword = { navController.navigate(Routes.FORGOT_PASSWORD) },
-                onLoginSuccess = { navController.navigate(Routes.HOME) {
-                    popUpTo(Routes.LOGIN) { inclusive = true }
-                }}
+                onLoginSuccess = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -85,6 +94,11 @@ fun AppNavGraph(
                 },
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onThemeToggle = {
+                    scope.launch {
+                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
+                    }
                 }
             )
         }
