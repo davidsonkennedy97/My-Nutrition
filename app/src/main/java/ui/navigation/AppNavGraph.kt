@@ -111,7 +111,7 @@ fun AppNavGraph(
                 isDarkTheme = isDarkTheme,
                 onBackClick = { navController.popBackStack() },
                 onArchiveClick = {
-                    // Lógica simulada: volta para a lista
+                    // Simulação: Apenas volta para a lista ao arquivar
                     navController.popBackStack()
                 }
             )
