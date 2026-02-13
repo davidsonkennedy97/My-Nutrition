@@ -1,0 +1,99 @@
+<resources>
+    <!-- Nome do app -->
+    <string name="app_name">My Nutrition</string>
+
+    <!-- Login -->
+    <string name="login_title">My Nutrition - Login</string>
+    <string name="phone">Telefone</string>
+    <string name="password">Senha</string>
+    <string name="sign_in">Entrar</string>
+    <string name="sign_up_nutritionist">Cadastrar nutricionista</string>
+
+    <!-- Idioma -->
+    <string name="lang_pt">PT</string>
+    <string name="lang_en">EN</string>
+
+    <!-- Placeholder -->
+    <string name="in_production">ainda em produção</string>
+
+    <!-- Cadastro -->
+    <string name="first_name">Nome</string>
+    <string name="last_name">Sobrenome</string>
+    <string name="email">Email</string>
+    <string name="validate_email">Validar email</string>
+    <string name="code_4_digits">Código (4 números)</string>
+    <string name="confirm_code">Confirmar código</string>
+    <string name="phone_number">Telefone</string>
+    <string name="crn_optional">CRN (opcional)</string>
+    <string name="password_min_6">Senha (mínimo 6 caracteres)</string>
+    <string name="back">Voltar</string>
+    <string name="register_action">Cadastro</string>
+    <string name="required">Obrigatório</string>
+    <string name="required_min_6">Obrigatório (mínimo 6)</string>
+    <string name="attention">Atenção</string>
+    <string name="fill_required_fields">Preencha todos os campos obrigatórios (Nome, Sobrenome, Email, Código, Telefone e Senha).</string>
+    <string name="ok">Ok</string>
+    <string name="your_code_test">Seu código (teste): %1$s</string>
+    <string name="click_validate_email_first">Clique em \'Validar email\' primeiro.</string>
+    <string name="enter_4_digits">Digite os 4 números.</string>
+    <string name="email_validated">Email validado!</string>
+    <string name="invalid_code">Código inválido.</string>
+
+    <!-- Esqueci minha senha -->
+    <string name="forgot_password_title">Esqueci minha senha</string>
+    <string name="phone_number_label">Número de telefone</string>
+    <string name="send_code">Enviar código</string>
+    <string name="new_password_min_6">Nova senha (mínimo 6 caracteres)</string>
+    <string name="reset_password">Redefinir senha</string>
+    <string name="code_valid_reset">Código válido!</string>
+    <string name="password_min_6_chars">Senha deve ter no mínimo 6 caracteres.</string>
+    <string name="password_reset_success">Senha redefinida com sucesso! (teste)</string>
+
+    <!-- Login adicional -->
+    <string name="forgot_password_link">Esqueci minha senha</string>
+    <string name="no_registration">Você não possui cadastro.</string>
+    <string name="wrong_credentials">Número ou senha errada.</string>
+    <string name="error">Erro</string>
+    <string name="success">Sucesso</string>
+    <string name="under_construction">Etapa em produção</string>
+    <string name="hide_password">Ocultar senha</string>
+    <string name="show_password">Mostrar senha</string>
+
+    <!-- Menu Lateral -->
+    <string name="menu_home">Home</string>
+    <string name="menu_patients">Pacientes</string>
+    <string name="menu_appointments">Agendamentos</string>
+    <string name="menu_favorites">Favoritos</string>
+    <string name="menu_recipes">Receitas</string>
+    <string name="menu_chat">Chat</string>
+    <string name="menu_settings">Configurações</string>
+    <string name="menu_logout">Logout</string>
+
+    <!-- Home -->
+    <string name="patients_list">Lista de Pacientes</string>
+    <string name="add_patient">Adicionar Paciente</string>
+    <string name="no_patients_yet">Nenhum paciente cadastrado ainda</string>
+    <string name="search_patient">Buscar paciente</string>
+
+    <!-- Configurações -->
+    <string name="profile">Perfil</string>
+    <string name="edit">Editar</string>
+    <string name="name">Nome</string>
+    <string name="language">Idioma</string>
+    <string name="theme">Tema</string>
+    <string name="light">Claro</string>
+    <string name="dark">Escuro</string>
+    <string name="change_password">Alterar Senha</string>
+    <string name="edit_profile">Editar Perfil</string>
+    <string name="save">Salvar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="current_password">Senha Atual</string>
+    <string name="new_password">Nova Senha</string>
+    <string name="confirm_password">Confirmar Senha</string>
+    <string name="wrong_current_password">Senha atual incorreta</string>
+    <string name="passwords_dont_match">As senhas não coincidem</string>
+    <string name="password_too_short">Senha deve ter no mínimo 6 caracteres</string>
+    <string name="password_changed_success">Senha alterada com sucesso!</string>
+    <string name="version">v1.0.0</string>
+
+</resources>

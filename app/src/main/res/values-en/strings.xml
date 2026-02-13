@@ -1,0 +1,94 @@
+<resources>
+    <string name="app_name">My Nutrition</string>
+
+    <string name="login_title">My Nutrition - Login</string>
+    <string name="phone">Phone</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign in</string>
+    <string name="sign_up_nutritionist">Sign up (nutritionist)</string>
+
+    <string name="lang_pt">PT</string>
+    <string name="lang_en">EN</string>
+    <string name="in_production">in production</string>
+
+    <!-- Register -->
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="email">Email</string>
+    <string name="validate_email">Validate Email</string>
+    <string name="code_4_digits">Code (4 digits)</string>
+    <string name="confirm_code">Confirm Code</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="crn_optional">CRN (optional)</string>
+    <string name="password_min_6">Password (minimum 6 characters)</string>
+    <string name="back">Back</string>
+    <string name="register_action">Register</string>
+    <string name="required">Required</string>
+    <string name="required_min_6">Required (minimum 6)</string>
+    <string name="attention">Attention</string>
+    <string name="fill_required_fields">Fill in all required fields (First Name, Last Name, Email, Code, Phone and Password).</string>
+    <string name="ok">Ok</string>
+    <string name="your_code_test">Your code (test): %1$s</string>
+    <string name="click_validate_email_first">Click \'Validate Email\' first.</string>
+    <string name="enter_4_digits">Enter the 4 digits.</string>
+    <string name="email_validated">Email validated!</string>
+    <string name="invalid_code">Invalid code.</string>
+
+    <!-- Forgot Password -->
+    <string name="forgot_password_title">Forgot My Password</string>
+    <string name="phone_number_label">Phone Number</string>
+    <string name="send_code">Send Code</string>
+    <string name="new_password_min_6">New Password (minimum 6 characters)</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="code_valid_reset">Code valid!</string>
+    <string name="password_min_6_chars">Password must have at least 6 characters.</string>
+    <string name="password_reset_success">Password successfully reset! (test)</string>
+
+    <!-- Login additional -->
+    <string name="forgot_password_link">Forgot My Password</string>
+    <string name="no_registration">You have no registration.</string>
+    <string name="wrong_credentials">Wrong number or password.</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="under_construction">Under Construction</string>
+    <string name="hide_password">Hide Password</string>
+    <string name="show_password">Show Password</string>
+
+    <!-- Side Menu -->
+    <string name="menu_home">Home</string>
+    <string name="menu_patients">Patients</string>
+    <string name="menu_appointments">Appointments</string>
+    <string name="menu_favorites">Favorites</string>
+    <string name="menu_recipes">Recipes</string>
+    <string name="menu_chat">Chat</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_logout">Logout</string>
+
+    <!-- Home -->
+    <string name="patients_list">Patients List</string>
+    <string name="add_patient">Add Patient</string>
+    <string name="no_patients_yet">No patients registered yet</string>
+    <string name="search_patient">Search patient</string>
+
+    <!-- Settings -->
+    <string name="profile">Profile</string>
+    <string name="edit">Edit</string>
+    <string name="name">Name</string>
+    <string name="language">Language</string>
+    <string name="theme">Theme</string>
+    <string name="light">Light</string>
+    <string name="dark">Dark</string>
+    <string name="change_password">Change Password</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="current_password">Current Password</string>
+    <string name="new_password">New Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="wrong_current_password">Current password is incorrect</string>
+    <string name="passwords_dont_match">Passwords do not match</string>
+    <string name="password_too_short">Password must have at least 6 characters</string>
+    <string name="password_changed_success">Password changed successfully!</string>
+    <string name="version">v1.0.0</string>
+
+</resources>
