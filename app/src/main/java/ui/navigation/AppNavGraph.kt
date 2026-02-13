@@ -11,8 +11,8 @@ import com.example.nutriplan.ui.screens.auth.ForgotPasswordScreen
 import com.example.nutriplan.ui.screens.auth.LoginScreen
 import com.example.nutriplan.ui.screens.auth.RegisterScreen
 import com.example.nutriplan.ui.screens.home.HomeScreen
-import com.example.nutriplan.ui.screens.chat.ChatListScreen
-import com.example.nutriplan.ui.screens.chat.ChatDetailScreen
+import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
+import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
 
 @Composable
 fun AppNavGraph(

@@ -1,13 +1,10 @@
-package com.example.nutriplan.data.model
+package com.example.nutriplan.model
 
 data class Conversation(
-    val id: String,
-    val participantName: String,
-    val participantAvatar: String? = null,
-    val lastMessage: String,
-    val lastMessageTime: Long,
-    val unreadCount: Int = 0,
-    val isOnline: Boolean = false,
-    val isArchived: Boolean = false,
-    val isPinned: Boolean = false
+    val id: String = "",
+    val userId: String = "",
+    val nutritionistId: String = "",
+    val lastMessage: String = "",
+    val lastMessageTimestamp: Long = 0,
+    val unreadCount: Int = 0
 )

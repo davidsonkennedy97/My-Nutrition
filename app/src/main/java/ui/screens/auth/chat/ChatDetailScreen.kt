@@ -1,4 +1,4 @@
-package com.example.nutriplan.ui.screens.chat
+package com.example.nutriplan.ui.screens.auth.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,8 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nutriplan.data.model.Message
-import com.example.nutriplan.data.model.MessageType
+import com.example.nutriplan.model.Message
+import com.example.nutriplan.model.MessageType
 import java.text.SimpleDateFormat
 import java.util.*
 

@@ -1,4 +1,4 @@
-package com.example.nutriplan.ui.screens.chat
+package com.example.nutriplan.ui.screens.auth.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nutriplan.data.model.Conversation
+import com.example.nutriplan.model.Conversation
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -163,7 +163,7 @@ fun ChatListScreen(
                         conversation = conversation,
                         onClick = { onConversationClick(conversation.id) }
                     )
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
