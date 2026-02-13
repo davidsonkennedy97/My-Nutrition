@@ -1,4 +1,4 @@
-package ui.screens.auth.chat
+package com.example.nutriplan.ui.screens.auth.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

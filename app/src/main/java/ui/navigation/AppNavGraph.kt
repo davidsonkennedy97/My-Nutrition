@@ -102,7 +102,7 @@ fun AppNavGraph(
 
             ChatDetailScreen(
                 conversationId = conversationId,
-                participantName = participantName,
+                nutritionistName = participantName,
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
                 onBackClick = {
