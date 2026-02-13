@@ -83,10 +83,11 @@ fun AppNavGraph(
             ChatListScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
-                onConversationClick = { conversationId ->
-                    navController.navigate(Routes.chatDetail(conversationId, "Nutricionista"))
+                onConversationClick = { conversationId, participantName ->
+                    // CORREÇÃO: Agora passa o ID e o Nome real do participante
+                    navController.navigate("chat_detail/$conversationId/$participantName")
                 },
-                onNewChatClick = { /* TODO */ },
+                onNewChatClick = { /* TODO: Implementar novo chat */ },
                 onBackClick = { navController.popBackStack() },
                 onThemeToggle = {
                     scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
@@ -94,8 +95,9 @@ fun AppNavGraph(
             )
         }
 
+        // Chat Detail com suporte a nome dinâmico
         composable(
-            route = Routes.CHAT_DETAIL,
+            route = "chat_detail/{conversationId}/{participantName}",
             arguments = listOf(
                 navArgument("conversationId") { type = NavType.StringType },
                 navArgument("participantName") { type = NavType.StringType }
@@ -106,12 +108,14 @@ fun AppNavGraph(
 
             ChatDetailScreen(
                 conversationId = conversationId,
-                nutritionistName = participantName,
+                nutritionistName = participantName, // Mostra o nome real no topo
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
-                onBackClick = { navController.popBackStack() },
+                onBackClick = {
+                    navController.popBackStack()
+                },
                 onArchiveClick = {
-                    // Simulação: Apenas volta para a lista ao arquivar
+                    // Simulação de arquivamento: apenas volta para a lista
                     navController.popBackStack()
                 }
             )

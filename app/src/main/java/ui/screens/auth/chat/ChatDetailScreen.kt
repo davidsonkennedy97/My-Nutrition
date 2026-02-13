@@ -9,9 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,126 +34,79 @@ fun ChatDetailScreen(
     isDarkTheme: Boolean = false
 ) {
     val backgroundColor = if (isDarkTheme) Color(0xFF1C1C1C) else Color(0xFFFAF8F3)
-    val messages = remember {
-        mutableStateListOf(
-            Message("1", conversationId, "paciente1", "Olá! Como vai?", System.currentTimeMillis() - 3600000, false),
-            Message("2", conversationId, "meu_uid", "Tudo bem! Em que posso ajudar?", System.currentTimeMillis() - 3000000, true)
-        )
+    val myId = "meu_id"
+
+    // LISTA DE MENSAGENS QUE MUDA CONFORME O CONTATO
+    val messages = remember(conversationId) {
+        when (conversationId) {
+            "1" -> mutableStateListOf(Message("1", "1", "paciente", "Olá, tudo bem?", System.currentTimeMillis() - 3600000, false))
+            "2" -> mutableStateListOf(Message("2", "2", "paciente", "Obrigada pela ajuda!", System.currentTimeMillis() - 86400000, false))
+            "3" -> mutableStateListOf(Message("3", "3", "paciente", "Pedro: Reunião amanhã às...", System.currentTimeMillis() - 7200000, false))
+            "4" -> mutableStateListOf(Message("4", "4", "paciente", "Seu ticket foi resolvido", System.currentTimeMillis() - 172800000, false))
+            "5" -> mutableStateListOf(Message("5", "5", "paciente", "Mensagem arquivada", System.currentTimeMillis() - 604800000, false))
+            else -> mutableStateListOf<Message>()
+        }
     }
-    var messageText by remember { mutableStateOf("") }
-    val listState = rememberLazyListState()
+
+    var textState by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
 
     Scaffold(
         containerColor = backgroundColor,
         topBar = {
             Surface(modifier = Modifier.fillMaxWidth().height(56.dp), color = PrimaryGreen) {
                 Row(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
-                    }
+                    IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White) }
                     Text(text = nutritionistName, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                     Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Opções", tint = Color.White)
-                        }
+                        IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.MoreVert, null, tint = Color.White) }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, modifier = Modifier.background(Color.White)) {
-                            DropdownMenuItem(
-                                text = { Text("Arquivar conversa", color = Color.Black) },
-                                onClick = { onArchiveClick(); showMenu = false },
-                                leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null, tint = Color.Black) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Limpar conversa", color = Color.Black) },
-                                onClick = { messages.clear(); showMenu = false },
-                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Black) }
-                            )
+                            DropdownMenuItem(text = { Text("Arquivar conversa", color = Color.Black) }, onClick = { onArchiveClick(); showMenu = false })
+                            DropdownMenuItem(text = { Text("Limpar conversa", color = Color.Black) }, onClick = { messages.clear(); showMenu = false })
                         }
                     }
                 }
             }
         },
         bottomBar = {
-            MessageInputBar(
-                messageText = messageText,
-                onMessageTextChange = { messageText = it },
-                isDarkTheme = isDarkTheme,
-                onSendClick = {
-                    if (messageText.isNotBlank()) {
-                        messages.add(Message(UUID.randomUUID().toString(), conversationId, "meu_uid", messageText, System.currentTimeMillis(), true))
-                        messageText = ""
+            Surface(modifier = Modifier.fillMaxWidth(), shadowElevation = 8.dp, color = if (isDarkTheme) Color(0xFF1C1C1C) else Color.White) {
+                Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = textState, onValueChange = { textState = it },
+                        modifier = Modifier.weight(1f), placeholder = { Text("Digite sua mensagem...") },
+                        shape = RoundedCornerShape(24.dp), maxLines = 4,
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = if (isDarkTheme) Color.White else Color.Black, unfocusedTextColor = if (isDarkTheme) Color.White else Color.Black, focusedBorderColor = PrimaryGreen, cursorColor = PrimaryGreen)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = {
+                        if (textState.isNotBlank()) {
+                            messages.add(Message(UUID.randomUUID().toString(), conversationId, myId, textState, System.currentTimeMillis(), true))
+                            textState = ""
+                        }
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.Send, null, tint = PrimaryGreen)
                     }
                 }
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp),
-            state = listState,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
-        ) {
-            items(messages) { message ->
-                MessageBubble(message = message, isDarkTheme = isDarkTheme)
             }
         }
-    }
-}
-
-@Composable
-fun MessageBubble(message: Message, isDarkTheme: Boolean) {
-    // FORÇAR ALINHAMENTO À DIREITA SE FOR EU
-    val alignment = if (message.isSentByMe) Alignment.CenterEnd else Alignment.CenterStart
-
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = alignment) {
-        Card(
-            modifier = Modifier.widthIn(max = 280.dp),
-            shape = RoundedCornerShape(
-                topStart = 16.dp, topEnd = 16.dp,
-                bottomStart = if (message.isSentByMe) 16.dp else 4.dp,
-                bottomEnd = if (message.isSentByMe) 4.dp else 16.dp
-            ),
-            colors = CardDefaults.cardColors(
-                containerColor = if (message.isSentByMe) PrimaryGreen else (if (isDarkTheme) Color(0xFF2C2C2C) else Color.White)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = message.text,
-                    color = if (message.isSentByMe) Color.White else (if (isDarkTheme) Color.White else Color.Black),
-                    fontSize = 15.sp
-                )
-                Text(
-                    text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (message.isSentByMe) Color.White.copy(alpha = 0.7f) else Color.Gray,
-                    modifier = Modifier.align(Alignment.End)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun MessageInputBar(messageText: String, onMessageTextChange: (String) -> Unit, onSendClick: () -> Unit, isDarkTheme: Boolean) {
-    Surface(modifier = Modifier.fillMaxWidth(), shadowElevation = 8.dp, color = if (isDarkTheme) Color(0xFF1C1C1C) else Color.White) {
-        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = messageText, onValueChange = onMessageTextChange,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Digite sua mensagem...", color = Color.Gray) },
-                shape = RoundedCornerShape(24.dp), maxLines = 4,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = if (isDarkTheme) Color.White else Color.Black,
-                    unfocusedTextColor = if (isDarkTheme) Color.White else Color.Black,
-                    focusedBorderColor = PrimaryGreen,
-                    cursorColor = PrimaryGreen
-                )
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(onClick = onSendClick, enabled = messageText.isNotBlank()) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar", tint = PrimaryGreen)
+    ) { p ->
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(p), state = listState, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(messages) { msg ->
+                val isMe = msg.senderId == myId
+                val align = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = align) {
+                    Card(
+                        modifier = Modifier.widthIn(max = 280.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = if (isMe) PrimaryGreen else (if (isDarkTheme) Color(0xFF2C2C2C) else Color.White))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(text = msg.text, color = if (isMe) Color.White else (if (isDarkTheme) Color.White else Color.Black), fontSize = 15.sp)
+                            Text(text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(msg.timestamp)), style = MaterialTheme.typography.labelSmall, color = if (isMe) Color.White.copy(alpha = 0.7f) else Color.Gray, modifier = Modifier.align(Alignment.End))
+                        }
+                    }
+                }
             }
         }
     }

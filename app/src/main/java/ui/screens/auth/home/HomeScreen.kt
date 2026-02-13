@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.example.nutriplan.R
 import com.example.nutriplan.core.LanguagePreferences
 import com.example.nutriplan.core.contextWithLocale
+import com.example.nutriplan.ui.screens.auth.recipes.RecipesScreen
 import com.example.nutriplan.ui.theme.PrimaryGreen
 import kotlinx.coroutines.launch
 
@@ -43,7 +45,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    var selectedMenuItem by remember { mutableStateOf("home") }
+    var selectedMenuItem by rememberSaveable { mutableStateOf("home") }
 
     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
     val nextThemeMode = if (isDarkTheme) "light" else "dark"
@@ -54,7 +56,7 @@ fun HomeScreen(
         MenuItem(R.string.menu_appointments, Icons.Default.DateRange, "appointments"),
         MenuItem(R.string.menu_favorites, Icons.Default.Star, "favorites"),
         MenuItem(R.string.menu_recipes, Icons.Default.Restaurant, "recipes"),
-        MenuItem(R.string.menu_chat, Icons.Default.Chat, "chat"), // CORRIGIDO
+        MenuItem(R.string.menu_chat, Icons.Default.Chat, "chat"),
         MenuItem(R.string.menu_settings, Icons.Default.Settings, "settings")
     )
 
@@ -82,7 +84,6 @@ fun HomeScreen(
                         label = { Text(localizedContext.getString(item.titleRes)) },
                         selected = selectedMenuItem == item.route,
                         onClick = {
-                            // MODIFICADO: Se for chat, chama o callback
                             if (item.route == "chat") {
                                 scope.launch { drawerState.close() }
                                 onNavigateToChat()
@@ -221,6 +222,12 @@ fun HomeScreen(
                 when (selectedMenuItem) {
                     "home" -> HomeContent(localizedContext, isDarkTheme)
                     "patients" -> PatientsContent(localizedContext, isDarkTheme)
+
+                    "recipes" -> RecipesScreen(
+                        localizedContext = localizedContext,
+                        isDarkTheme = isDarkTheme
+                    )
+
                     "settings" -> SettingsScreen(
                         localizedContext = localizedContext,
                         isDarkTheme = isDarkTheme,
@@ -228,6 +235,7 @@ fun HomeScreen(
                         onLanguageChange = { newLang -> scope.launch { prefs.setLanguage(newLang) } },
                         onThemeChange = { scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") } }
                     )
+
                     else -> ComingSoonContent(localizedContext, selectedMenuItem, isDarkTheme)
                 }
             }
