@@ -1,8 +1,6 @@
 package com.example.nutriplan.ui.screens.home
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -30,10 +28,10 @@ data class MenuItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    modifier: Modifier = Modifier,
     currentLanguage: String,
     isDarkTheme: Boolean,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToChat: () -> Unit = {}
 ) {
     val baseContext = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -56,7 +54,7 @@ fun HomeScreen(
         MenuItem(R.string.menu_appointments, Icons.Default.DateRange, "appointments"),
         MenuItem(R.string.menu_favorites, Icons.Default.Star, "favorites"),
         MenuItem(R.string.menu_recipes, Icons.Default.Restaurant, "recipes"),
-        MenuItem(R.string.menu_chat, Icons.Default.Chat, "chat"),
+        MenuItem(R.string.menu_chat, Icons.Default.Chat, "chat"), // CORRIGIDO
         MenuItem(R.string.menu_settings, Icons.Default.Settings, "settings")
     )
 
@@ -84,8 +82,14 @@ fun HomeScreen(
                         label = { Text(localizedContext.getString(item.titleRes)) },
                         selected = selectedMenuItem == item.route,
                         onClick = {
-                            selectedMenuItem = item.route
-                            scope.launch { drawerState.close() }
+                            // MODIFICADO: Se for chat, chama o callback
+                            if (item.route == "chat") {
+                                scope.launch { drawerState.close() }
+                                onNavigateToChat()
+                            } else {
+                                selectedMenuItem = item.route
+                                scope.launch { drawerState.close() }
+                            }
                         },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         colors = NavigationDrawerItemDefaults.colors(
