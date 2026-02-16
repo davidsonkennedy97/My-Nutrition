@@ -16,6 +16,9 @@ import com.example.nutriplan.ui.screens.auth.RegisterScreen
 import com.example.nutriplan.ui.screens.home.HomeScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
+import com.example.nutriplan.ui.screens.PacientesScreen
+import com.example.nutriplan.ui.screens.FormularioPacienteScreen
+import com.example.nutriplan.ui.screens.DetalhesPacienteScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -75,6 +78,9 @@ fun AppNavGraph(
                 },
                 onNavigateToChat = {
                     navController.navigate(Routes.CHAT_LIST)
+                },
+                onNavigateToPacientes = {
+                    navController.navigate(Routes.PACIENTES)
                 }
             )
         }
@@ -84,7 +90,6 @@ fun AppNavGraph(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
                 onConversationClick = { conversationId, participantName ->
-                    // CORREÇÃO: Agora passa o ID e o Nome real do participante
                     navController.navigate("chat_detail/$conversationId/$participantName")
                 },
                 onNewChatClick = { /* TODO: Implementar novo chat */ },
@@ -108,15 +113,75 @@ fun AppNavGraph(
 
             ChatDetailScreen(
                 conversationId = conversationId,
-                nutritionistName = participantName, // Mostra o nome real no topo
+                nutritionistName = participantName,
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
                 onBackClick = {
                     navController.popBackStack()
                 },
                 onArchiveClick = {
-                    // Simulação de arquivamento: apenas volta para a lista
                     navController.popBackStack()
+                }
+            )
+        }
+
+        // ========== ROTAS DE PACIENTES ==========
+
+        // Lista de Pacientes
+        composable(Routes.PACIENTES) {
+            PacientesScreen(
+                onNavigateToFormulario = {
+                    navController.navigate(Routes.PACIENTES_FORMULARIO)
+                },
+                onNavigateToDetalhes = { pacienteId ->
+                    navController.navigate(Routes.pacientesDetalhes(pacienteId))
+                }
+            )
+        }
+
+        // Formulário - Novo Paciente
+        composable(Routes.PACIENTES_FORMULARIO) {
+            FormularioPacienteScreen(
+                pacienteId = null,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Formulário - Editar Paciente
+        composable(
+            route = Routes.PACIENTES_FORMULARIO_EDIT,
+            arguments = listOf(
+                navArgument("pacienteId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
+
+            FormularioPacienteScreen(
+                pacienteId = pacienteId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Detalhes do Paciente
+        composable(
+            route = Routes.PACIENTES_DETALHES,
+            arguments = listOf(
+                navArgument("pacienteId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
+
+            DetalhesPacienteScreen(
+                pacienteId = pacienteId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToEdit = { id ->
+                    navController.navigate(Routes.pacientesFormularioEdit(id))
                 }
             )
         }

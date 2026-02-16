@@ -1,5 +1,6 @@
 package com.example.nutriplan.ui.screens.home
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -33,7 +34,8 @@ fun HomeScreen(
     currentLanguage: String,
     isDarkTheme: Boolean,
     onLogout: () -> Unit,
-    onNavigateToChat: () -> Unit = {}
+    onNavigateToChat: () -> Unit = {},
+    onNavigateToPacientes: () -> Unit = {}
 ) {
     val baseContext = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -84,12 +86,19 @@ fun HomeScreen(
                         label = { Text(localizedContext.getString(item.titleRes)) },
                         selected = selectedMenuItem == item.route,
                         onClick = {
-                            if (item.route == "chat") {
-                                scope.launch { drawerState.close() }
-                                onNavigateToChat()
-                            } else {
-                                selectedMenuItem = item.route
-                                scope.launch { drawerState.close() }
+                            when (item.route) {
+                                "chat" -> {
+                                    scope.launch { drawerState.close() }
+                                    onNavigateToChat()
+                                }
+                                "patients" -> {
+                                    scope.launch { drawerState.close() }
+                                    onNavigateToPacientes()
+                                }
+                                else -> {
+                                    selectedMenuItem = item.route
+                                    scope.launch { drawerState.close() }
+                                }
                             }
                         },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -220,8 +229,7 @@ fun HomeScreen(
                     .padding(innerPadding)
             ) {
                 when (selectedMenuItem) {
-                    "home" -> HomeContent(localizedContext, isDarkTheme)
-                    "patients" -> PatientsContent(localizedContext, isDarkTheme)
+                    "home" -> HomeContent(localizedContext, isDarkTheme, onNavigateToPacientes)
 
                     "recipes" -> RecipesScreen(
                         localizedContext = localizedContext,
@@ -244,7 +252,11 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeContent(localizedContext: android.content.Context, isDarkTheme: Boolean) {
+fun HomeContent(
+    localizedContext: Context,
+    isDarkTheme: Boolean,
+    onNavigateToPacientes: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -281,7 +293,7 @@ fun HomeContent(localizedContext: android.content.Context, isDarkTheme: Boolean)
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { /* TODO */ },
+            onClick = onNavigateToPacientes,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
         ) {
@@ -293,22 +305,7 @@ fun HomeContent(localizedContext: android.content.Context, isDarkTheme: Boolean)
 }
 
 @Composable
-fun PatientsContent(localizedContext: android.content.Context, isDarkTheme: Boolean) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = localizedContext.getString(R.string.patients_list),
-            style = MaterialTheme.typography.headlineSmall,
-            color = if (isDarkTheme) Color.White else Color.Black
-        )
-    }
-}
-
-@Composable
-fun ComingSoonContent(localizedContext: android.content.Context, section: String, isDarkTheme: Boolean) {
+fun ComingSoonContent(localizedContext: Context, section: String, isDarkTheme: Boolean) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center

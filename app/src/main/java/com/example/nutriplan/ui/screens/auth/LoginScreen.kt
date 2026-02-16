@@ -2,6 +2,7 @@ package com.example.nutriplan.ui.screens.auth
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -165,7 +166,7 @@ fun LoginScreen(
             TextButton(
                 onClick = onGoToForgotPassword,
                 modifier = Modifier.padding(start = 0.dp, top = 2.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                contentPadding = PaddingValues(0.dp)
             ) {
                 Text(
                     text = localizedContext.getString(R.string.forgot_password_link),

@@ -1,5 +1,6 @@
 package com.example.nutriplan.ui.screens.home
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -20,7 +21,7 @@ import com.example.nutriplan.ui.theme.PrimaryGreen
 
 @Composable
 fun SettingsScreen(
-    localizedContext: android.content.Context,
+    localizedContext: Context,
     isDarkTheme: Boolean,
     currentLanguage: String,
     onLanguageChange: (String) -> Unit,
@@ -129,7 +130,7 @@ fun ProfileItem(label: String, value: String, isDarkTheme: Boolean) {
 }
 
 @Composable
-fun EditProfileDialog(userName: String, userEmail: String, userPhone: String, userCRN: String, isDarkTheme: Boolean, localizedContext: android.content.Context, onDismiss: () -> Unit, onSave: (String, String, String, String) -> Unit) {
+fun EditProfileDialog(userName: String, userEmail: String, userPhone: String, userCRN: String, isDarkTheme: Boolean, localizedContext: Context, onDismiss: () -> Unit, onSave: (String, String, String, String) -> Unit) {
     var name by remember { mutableStateOf(userName) }
     var email by remember { mutableStateOf(userEmail) }
     var phone by remember { mutableStateOf(userPhone) }
@@ -155,7 +156,7 @@ fun EditProfileDialog(userName: String, userEmail: String, userPhone: String, us
 }
 
 @Composable
-fun ChangePasswordDialog(isDarkTheme: Boolean, localizedContext: android.content.Context, onDismiss: () -> Unit) {
+fun ChangePasswordDialog(isDarkTheme: Boolean, localizedContext: Context, onDismiss: () -> Unit) {
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }

@@ -1,5 +1,6 @@
 package com.example.nutriplan.ui.screens.auth.recipes
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.nutriplan.model.Recipe
 import com.example.nutriplan.ui.theme.PrimaryGreen
@@ -19,7 +21,7 @@ import com.example.nutriplan.ui.theme.PrimaryGreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipesScreen(
-    localizedContext: android.content.Context,
+    localizedContext: Context,
     isDarkTheme: Boolean
 ) {
     var recipes by remember { mutableStateOf(listOf<Recipe>()) }
@@ -167,16 +169,18 @@ fun RecipesScreen(
 
                         // Só mostra Excluir se for uma receita existente
                         if (selectedRecipe != null) {
-                            OutlinedButton(
+                            Button(
                                 onClick = { showDeleteDialog = true },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color.Red
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red
                                 )
                             ) {
-                                Icon(Icons.Default.Delete, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Excluir")
+                                Text(
+                                    text = "Excluir",
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
                             }
                         }
 
@@ -218,10 +222,13 @@ fun RecipesScreen(
                         )
                     }
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                    ) {
                         items(recipes) { recipe ->
                             Card(
-                                onClick = { openEditorForExisting(recipe) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
@@ -229,12 +236,37 @@ fun RecipesScreen(
                                     containerColor = PrimaryGreen.copy(alpha = 0.10f)
                                 )
                             ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Título da receita (ocupa o espaço disponível)
                                     Text(
                                         text = recipe.title,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isDarkTheme) Color.White else Color.Black
+                                        color = if (isDarkTheme) Color.White else Color.Black,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Botão "Ver" no canto direito
+                                    TextButton(
+                                        onClick = { openEditorForExisting(recipe) },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = PrimaryGreen
+                                        )
+                                    ) {
+                                        Text(
+                                            text = "Ver",
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
                                 }
                             }
                         }
