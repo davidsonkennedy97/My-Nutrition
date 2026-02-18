@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MedidaDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)  // ← SOLUÇÃO
     suspend fun inserir(medida: MedidaEntity)
 
     @Update
