@@ -76,4 +76,13 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    dependencies {
+        // ... suas dependências existentes ...
+
+        // ========== BIBLIOTECA DE GRÁFICOS VICO ==========
+        implementation("com.patrykandpatrick.vico:compose:1.13.1")
+        implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
+        implementation("com.patrykandpatrick.vico:core:1.13.1")
+    }
 }
