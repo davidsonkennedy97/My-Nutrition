@@ -19,6 +19,7 @@ import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
 import com.example.nutriplan.ui.screens.PacientesScreen
 import com.example.nutriplan.ui.screens.FormularioPacienteScreen
 import com.example.nutriplan.ui.screens.DetalhesPacienteScreen
+import com.example.nutriplan.ui.screens.FormularioMedidaScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -92,7 +93,7 @@ fun AppNavGraph(
                 onConversationClick = { conversationId, participantName ->
                     navController.navigate("chat_detail/$conversationId/$participantName")
                 },
-                onNewChatClick = { /* TODO: Implementar novo chat */ },
+                onNewChatClick = { },
                 onBackClick = { navController.popBackStack() },
                 onThemeToggle = {
                     scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
@@ -100,7 +101,6 @@ fun AppNavGraph(
             )
         }
 
-        // Chat Detail com suporte a nome dinâmico
         composable(
             route = "chat_detail/{conversationId}/{participantName}",
             arguments = listOf(
@@ -125,33 +125,57 @@ fun AppNavGraph(
             )
         }
 
-        // ========== ROTAS DE PACIENTES ==========
-
-        // Lista de Pacientes
         composable(Routes.PACIENTES) {
             PacientesScreen(
+                currentLanguage = currentLanguage,
+                isDarkTheme = isDarkTheme,
                 onNavigateToFormulario = {
                     navController.navigate(Routes.PACIENTES_FORMULARIO)
                 },
                 onNavigateToDetalhes = { pacienteId ->
-                    navController.navigate(Routes.pacientesDetalhes(pacienteId))
+                    // USA A ROTA DIRETAMENTE COM NAVEGAÇÃO CORRETA
+                    navController.navigate("detalhes_paciente/$pacienteId?tabIndex=0")
+                },
+                onNavigateToEdit = { pacienteId ->
+                    navController.navigate("pacientes_formulario/$pacienteId")
+                },
+                onLanguageChange = {
+                    val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
+                    scope.launch { prefs.setLanguage(nextLanguage) }
+                },
+                onThemeChange = {
+                    scope.launch {
+                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
+                    }
+                },
+                onOpenDrawer = {
+                    navController.popBackStack()
                 }
             )
         }
 
-        // Formulário - Novo Paciente
         composable(Routes.PACIENTES_FORMULARIO) {
             FormularioPacienteScreen(
                 pacienteId = null,
+                isDarkTheme = isDarkTheme,
+                currentLanguage = currentLanguage,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onLanguageChange = {
+                    val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
+                    scope.launch { prefs.setLanguage(nextLanguage) }
+                },
+                onThemeChange = {
+                    scope.launch {
+                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
+                    }
                 }
             )
         }
 
-        // Formulário - Editar Paciente
         composable(
-            route = Routes.PACIENTES_FORMULARIO_EDIT,
+            route = "pacientes_formulario/{pacienteId}",
             arguments = listOf(
                 navArgument("pacienteId") { type = NavType.StringType }
             )
@@ -160,28 +184,100 @@ fun AppNavGraph(
 
             FormularioPacienteScreen(
                 pacienteId = pacienteId,
+                isDarkTheme = isDarkTheme,
+                currentLanguage = currentLanguage,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onLanguageChange = {
+                    val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
+                    scope.launch { prefs.setLanguage(nextLanguage) }
+                },
+                onThemeChange = {
+                    scope.launch {
+                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
+                    }
                 }
             )
         }
 
-        // Detalhes do Paciente
+        // ========== DETALHES DO PACIENTE (COM SUPORTE A ABA) ==========
         composable(
-            route = Routes.PACIENTES_DETALHES,
+            route = "detalhes_paciente/{pacienteId}?tabIndex={tabIndex}",
             arguments = listOf(
-                navArgument("pacienteId") { type = NavType.StringType }
+                navArgument("pacienteId") { type = NavType.StringType },
+                navArgument("tabIndex") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                }
             )
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
+            val tabIndex = backStackEntry.arguments?.getInt("tabIndex") ?: 0
 
             DetalhesPacienteScreen(
                 pacienteId = pacienteId,
+                initialTabIndex = tabIndex,
+                isDarkTheme = isDarkTheme,
+                currentLanguage = currentLanguage,
                 onNavigateBack = {
                     navController.popBackStack()
                 },
                 onNavigateToEdit = { id ->
-                    navController.navigate(Routes.pacientesFormularioEdit(id))
+                    navController.navigate("pacientes_formulario/$id")
+                },
+                onNavigateToFormularioMedida = { id, medidaId ->
+                    if (medidaId != null) {
+                        navController.navigate("medida_formulario/$id?medidaId=$medidaId")
+                    } else {
+                        navController.navigate("medida_formulario/$id")
+                    }
+                },
+                onLanguageChange = {
+                    val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
+                    scope.launch { prefs.setLanguage(nextLanguage) }
+                },
+                onThemeChange = {
+                    scope.launch {
+                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
+                    }
+                }
+            )
+        }
+
+        // ========== FORMULÁRIO DE MEDIDA (NOVA E EDITAR) ==========
+        composable(
+            route = "medida_formulario/{pacienteId}?medidaId={medidaId}",
+            arguments = listOf(
+                navArgument("pacienteId") { type = NavType.StringType },
+                navArgument("medidaId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
+            val medidaId = backStackEntry.arguments?.getString("medidaId")
+
+            FormularioMedidaScreen(
+                pacienteId = pacienteId,
+                medidaId = medidaId,
+                isDarkTheme = isDarkTheme,
+                currentLanguage = currentLanguage,
+                onNavigateBack = {
+                    // VOLTA PARA A ABA MEDIDAS (tabIndex=1)
+                    navController.popBackStack()
+                    navController.navigate("detalhes_paciente/$pacienteId?tabIndex=1")
+                },
+                onLanguageChange = {
+                    val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
+                    scope.launch { prefs.setLanguage(nextLanguage) }
+                },
+                onThemeChange = {
+                    scope.launch {
+                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
+                    }
                 }
             )
         }

@@ -2,6 +2,7 @@ package com.example.nutriplan.data.database
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.ColumnInfo
 import java.util.UUID
 
 @Entity(tableName = "pacientes")
@@ -10,30 +11,30 @@ data class PacienteEntity(
     val id: String = UUID.randomUUID().toString(),
 
     // Dados básicos
-    val nome: String,
-    val email: String = "",
-    val telefone: String = "",
-    val objetivo: String = "",
+    @ColumnInfo(name = "nome") val nome: String,
+    @ColumnInfo(name = "apelido") val apelido: String = "",
+    @ColumnInfo(name = "sexo") val sexo: String = "",
+    @ColumnInfo(name = "email") val email: String = "",
+    @ColumnInfo(name = "telefone") val telefone: String = "",
+    @ColumnInfo(name = "data_nascimento") val dataNascimento: String = "",
+    @ColumnInfo(name = "objetivo") val objetivo: String = "",
+    @ColumnInfo(name = "status") val status: String = "Ativo",
+    @ColumnInfo(name = "data_cadastro") val dataCadastro: String = "",
 
-    // Dados antropométricos
-    val pesoAtual: Float = 0f,
-    val pesoMeta: Float = 0f,
-    val altura: Float = 0f,
-    val idade: Int = 0,
+    // Dados antropométricos (mantidos para compatibilidade)
+    @ColumnInfo(name = "peso_atual") val pesoAtual: Float = 0f,
+    @ColumnInfo(name = "peso_meta") val pesoMeta: Float = 0f,
+    @ColumnInfo(name = "altura") val altura: Float = 0f,
+    @ColumnInfo(name = "idade") val idade: Int = 0,
 
-    // Status
-    val status: String = "Ativo", // Ativo, Inativo, Em tratamento
+    // Anamnese (mantidos para compatibilidade)
+    @ColumnInfo(name = "historico_doencas") val historicoDoencas: String = "",
+    @ColumnInfo(name = "alergias_alimentares") val alergiasAlimentares: String = "",
+    @ColumnInfo(name = "medicamentos") val medicamentos: String = "",
+    @ColumnInfo(name = "rotina_exercicios") val rotinaExercicios: String = "",
 
-    // Datas
-    val ultimaConsulta: Long = 0L, // timestamp
-    val proximaConsulta: Long = 0L, // timestamp
-
-    // Anamnese
-    val historicoDoencas: String = "",
-    val alergiasAlimentares: String = "",
-    val medicamentos: String = "",
-    val rotinaExercicios: String = "",
-
-    // Controle
-    val dataCriacao: Long = System.currentTimeMillis()
+    // Datas (mantidos para compatibilidade)
+    @ColumnInfo(name = "ultima_consulta") val ultimaConsulta: Long = 0L,
+    @ColumnInfo(name = "proxima_consulta") val proximaConsulta: Long = 0L,
+    @ColumnInfo(name = "data_criacao") val dataCriacao: Long = System.currentTimeMillis()
 )

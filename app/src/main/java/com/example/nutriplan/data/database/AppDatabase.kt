@@ -6,29 +6,30 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [PacienteEntity::class],
-    version = 1,
+    entities = [
+        PacienteEntity::class,
+        MedidaEntity::class
+    ],
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    // Acesso ao DAO de pacientes
     abstract fun pacienteDao(): PacienteDao
+    abstract fun medidaDao(): MedidaDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
         fun getDatabase(context: Context): AppDatabase {
-            // Se já existe uma instância, retorna ela
             return INSTANCE ?: synchronized(this) {
-                // Se não existe, cria uma nova
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "nutriplan_database" // Nome do banco de dados
+                    "nutriplan_database"
                 )
-                    .fallbackToDestructiveMigration() // Se mudar a versão, recria o banco
+                    .fallbackToDestructiveMigration()
                     .build()
 
                 INSTANCE = instance
