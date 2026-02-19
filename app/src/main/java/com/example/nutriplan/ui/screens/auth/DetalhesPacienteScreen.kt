@@ -1,8 +1,10 @@
 package com.example.nutriplan.ui.screens
 
+import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,11 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nutriplan.ui.theme.PrimaryGreen
+import com.example.nutriplan.ui.viewmodel.DietaViewModel
 import com.example.nutriplan.ui.viewmodel.PacienteViewModel
 import com.example.nutriplan.utils.CalculosMedidas
 import com.example.nutriplan.utils.calcularIdade
@@ -49,6 +53,11 @@ fun DetalhesPacienteScreen(
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
     onNavigateToFormularioMedida: (String, String?) -> Unit = { _, _ -> },
+
+    // ✅ ADICIONADOS PARA DIETA
+    dietaViewModel: DietaViewModel,
+    onNavigateToDietaEditor: (String) -> Unit,
+
     isDarkTheme: Boolean = false,
     currentLanguage: String = "pt",
     onLanguageChange: () -> Unit = {},
@@ -153,7 +162,13 @@ fun DetalhesPacienteScreen(
                     isDarkTheme = isDarkTheme
                 )
 
-                2 -> DietaTab()
+                // ✅ ABA DIETA CORRIGIDA
+                2 -> DietaTab(
+                    pacienteId = pacienteId,
+                    isDarkTheme = isDarkTheme,
+                    dietaViewModel = dietaViewModel,
+                    onNavigateToDietEditor = { pid: String -> onNavigateToDietaEditor(pid) }
+                )
 
                 3 -> EvolucaoTab(
                     pacienteId = pacienteId,
@@ -227,7 +242,6 @@ fun DadosTab(
         ) {
             InfoCard(title = "Informações Pessoais", icon = Icons.Default.Person) {
                 InfoRow("Nome", paciente.nome)
-
                 if (paciente.apelido.isNotEmpty()) InfoRow("Apelido", paciente.apelido)
                 if (paciente.sexo.isNotEmpty()) InfoRow("Sexo", paciente.sexo)
                 if (paciente.dataNascimento.isNotEmpty()) InfoRow("Data de Nascimento", paciente.dataNascimento)
@@ -330,7 +344,6 @@ fun MedidasTab(
         medidaViewModel.carregarMedidasDoPaciente(pacienteId)
     }
 
-    // ORDEM CERTA: mais antiga -> mais nova (dataCriacao)
     val medidasOrdenadas = remember(medidas) {
         medidas.sortedWith(compareBy({ it.dataCriacao }, { it.id }))
     }
@@ -391,12 +404,12 @@ fun MedidasTab(
                     MedidaCard(
                         medida = medida,
                         isDarkTheme = isDarkTheme,
-                        onCardClick = { _ ->
+                        onCardClick = {
                             medidaSelecionada = medida
                             showDetalhesDialog = true
                         },
                         onEditClick = { medidaId -> onNavigateToEdit(medidaId) },
-                        onDeleteClick = { _ ->
+                        onDeleteClick = {
                             medidaSelecionada = medida
                             showDeleteDialog = true
                         }
@@ -452,22 +465,18 @@ fun MedidasTab(
 fun MedidaCard(
     medida: com.example.nutriplan.data.database.MedidaEntity,
     isDarkTheme: Boolean,
-    onCardClick: (String) -> Unit = {},
+    onCardClick: () -> Unit = {},
     onEditClick: (String) -> Unit = {},
-    onDeleteClick: (String) -> Unit = {}
+    onDeleteClick: () -> Unit = {}
 ) {
     Card(
-        onClick = { onCardClick(medida.id) },
+        onClick = onCardClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = PrimaryGreen),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -489,66 +498,32 @@ fun MedidaCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("Peso", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-                    Text(
-                        text = "%.1f kg".format(medida.peso),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Text("%.1f kg".format(medida.peso), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
                 }
-
                 Column {
                     Text("Altura", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-                    Text(
-                        text = "%.0f cm".format(medida.altura),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Text("%.0f cm".format(medida.altura), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
                 }
-
                 Column {
                     Text("IMC", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-                    Text(
-                        text = "%.1f".format(medida.imc),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Text("%.1f".format(medida.imc), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
 
             if (medida.pgcValor != null) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
                         Text("% Gordura", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-                        Text(
-                            text = "%.1f%%".format(medida.pgcValor),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        Text("%.1f%%".format(medida.pgcValor), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
                     }
-
                     if (medida.mlgKg != null) {
                         Column {
                             Text("MLG", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-                            Text(
-                                text = "%.1f kg".format(medida.mlgKg),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            Text("%.1f kg".format(medida.mlgKg), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
@@ -556,27 +531,15 @@ fun MedidaCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("GET", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-                    Text(
-                        text = "%.0f kcal".format(medida.getValor),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Text("%.0f kcal".format(medida.getValor), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text("TMB", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-                    Text(
-                        text = medida.tmbMetodo,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.9f)
-                    )
+                    Text(medida.tmbMetodo, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
                 }
             }
 
@@ -588,11 +551,11 @@ fun MedidaCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { onEditClick(medida.id) }, modifier = Modifier.size(40.dp)) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = Color.White, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.White, modifier = Modifier.size(20.dp))
                 }
 
-                IconButton(onClick = { onDeleteClick(medida.id) }, modifier = Modifier.size(40.dp)) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White, modifier = Modifier.size(20.dp))
+                IconButton(onClick = onDeleteClick, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White, modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -613,7 +576,7 @@ fun DetalheMedidaDialog(
     val massaResidual = CalculosMedidas.calcularMassaResidual(medida.peso)
 
     val massaGordura = medida.pgcValor?.let { CalculosMedidas.calcularMassaGordura(medida.peso, it) }
-    val massaLivreGordura = medida.pgcValor?.let { CalculosMedidas.calcularMLG(medida.peso, it) }
+    val massaLivreGordura = medida.mlgKg ?: medida.pgcValor?.let { CalculosMedidas.calcularMLG(medida.peso, it) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -650,39 +613,74 @@ fun DetalheMedidaDialog(
                 }
 
                 massaGordura?.let { InfoRowDialog("Massa de Gordura", "%.2f kg".format(it), isDarkTheme) }
-                massaLivreGordura?.let { InfoRowDialog("Massa Livre de Gordura (MLG)", "%.2f kg".format(it), isDarkTheme) }
+                massaLivreGordura?.let { InfoRowDialog("MLG (Massa Livre de Gordura)", "%.2f kg".format(it), isDarkTheme) }
 
                 InfoRowDialog("Massa Muscular", "%.2f kg".format(massaMuscular), isDarkTheme)
                 InfoRowDialog("Massa Óssea", "%.2f kg".format(massaOssea), isDarkTheme)
                 InfoRowDialog("Massa Residual", "%.2f kg".format(massaResidual), isDarkTheme)
+
+                val temCircunferencias = listOfNotNull(
+                    medida.circPescoco, medida.circOmbro, medida.circTorax,
+                    medida.circCintura, medida.circAbdomen, medida.circQuadril,
+                    medida.circCoxaMedial, medida.circPanturrilha,
+                    medida.circBracoRelaxado, medida.circBracoContraido,
+                    medida.circAntebraco, medida.circPunho
+                ).isNotEmpty()
+
+                if (temCircunferencias) {
+                    Divider(color = if (isDarkTheme) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.2f))
+                    SectionTitle("Circunferências (cm)", isDarkTheme)
+
+                    medida.circPescoco?.let { InfoRowDialog("Pescoço", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circOmbro?.let { InfoRowDialog("Ombro", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circTorax?.let { InfoRowDialog("Tórax", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circCintura?.let { InfoRowDialog("Cintura", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circAbdomen?.let { InfoRowDialog("Abdômen", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circQuadril?.let { InfoRowDialog("Quadril", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circCoxaMedial?.let { InfoRowDialog("Coxa Medial", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circPanturrilha?.let { InfoRowDialog("Panturrilha", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circBracoRelaxado?.let { InfoRowDialog("Braço Relaxado", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circBracoContraido?.let { InfoRowDialog("Braço Contraído", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circAntebraco?.let { InfoRowDialog("Antebraço", "%.1f cm".format(it), isDarkTheme) }
+                    medida.circPunho?.let { InfoRowDialog("Punho", "%.1f cm".format(it), isDarkTheme) }
+                }
+
+                val temPregas = listOfNotNull(
+                    medida.pregaBiceps, medida.pregaTriceps, medida.pregaPeitoral,
+                    medida.pregaAxilarMedia, medida.pregaSubescapular, medida.pregaAbdomen,
+                    medida.pregaSuprailiaca, medida.pregaCoxa
+                ).isNotEmpty()
+
+                if (temPregas) {
+                    Divider(color = if (isDarkTheme) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.2f))
+                    SectionTitle("Pregas Subcutâneas (mm)", isDarkTheme)
+
+                    medida.pregaBiceps?.let { InfoRowDialog("Bíceps", "%.1f mm".format(it), isDarkTheme) }
+                    medida.pregaTriceps?.let { InfoRowDialog("Tríceps", "%.1f mm".format(it), isDarkTheme) }
+                    medida.pregaPeitoral?.let { InfoRowDialog("Peitoral", "%.1f mm".format(it), isDarkTheme) }
+                    medida.pregaAxilarMedia?.let { InfoRowDialog("Axilar Média", "%.1f mm".format(it), isDarkTheme) }
+                    medida.pregaSubescapular?.let { InfoRowDialog("Subescapular", "%.1f mm".format(it), isDarkTheme) }
+                    medida.pregaAbdomen?.let { InfoRowDialog("Abdômen", "%.1f mm".format(it), isDarkTheme) }
+                    medida.pregaSuprailiaca?.let { InfoRowDialog("Supra-ilíaca", "%.1f mm".format(it), isDarkTheme) }
+                    medida.pregaCoxa?.let { InfoRowDialog("Coxa", "%.1f mm".format(it), isDarkTheme) }
+                }
             }
         },
         confirmButton = {
-            Button(
-                onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
-            ) { Text("Fechar") }
+            Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)) {
+                Text("Fechar")
+            }
         }
     )
 }
 
-@Composable
-fun DietaTab() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(text = "Plano Alimentar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(text = "Em desenvolvimento...", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
-        Text(
-            text = "• Criar plano alimentar personalizado\n• Definir refeições diárias\n• Calcular calorias e macronutrientes\n• Gerar PDF do plano alimentar",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
-        )
-    }
+/* ============================
+   ABA EVOLUÇÃO (multi-colunas + gráfico)
+   ============================ */
+
+private class AvaliacaoItem(initial: com.example.nutriplan.data.database.MedidaEntity?) {
+    var medida by mutableStateOf(initial)
+    var expanded by mutableStateOf(false)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -697,11 +695,6 @@ fun EvolucaoTab(
 
     val idade = calcularIdade(paciente.dataNascimento)
 
-    var medidaSelecionada1 by remember { mutableStateOf<com.example.nutriplan.data.database.MedidaEntity?>(null) }
-    var medidaSelecionada2 by remember { mutableStateOf<com.example.nutriplan.data.database.MedidaEntity?>(null) }
-    var expanded1 by remember { mutableStateOf(false) }
-    var expanded2 by remember { mutableStateOf(false) }
-
     LaunchedEffect(pacienteId) {
         medidaViewModel.carregarMedidasDoPaciente(pacienteId)
     }
@@ -710,11 +703,47 @@ fun EvolucaoTab(
         medidas.sortedWith(compareBy({ it.dataCriacao }, { it.id }))
     }
 
-    LaunchedEffect(medidasOrdenadas) {
-        if (medidasOrdenadas.isNotEmpty() && medidaSelecionada1 == null && medidaSelecionada2 == null) {
-            medidaSelecionada1 = medidasOrdenadas.firstOrNull()
-            medidaSelecionada2 = medidasOrdenadas.lastOrNull()
+    val medidasComLabel: List<Pair<com.example.nutriplan.data.database.MedidaEntity, String>> =
+        remember(medidasOrdenadas) {
+            val contagemPorData = medidasOrdenadas.groupingBy { it.dataMedicao }.eachCount()
+            val indiceCorrente = mutableMapOf<String, Int>()
+            medidasOrdenadas.map { medida ->
+                val total = contagemPorData[medida.dataMedicao] ?: 1
+                if (total <= 1) {
+                    medida to medida.dataMedicao
+                } else {
+                    val atual = (indiceCorrente[medida.dataMedicao] ?: 0) + 1
+                    indiceCorrente[medida.dataMedicao] = atual
+                    medida to "${medida.dataMedicao} ($atual)"
+                }
+            }
         }
+
+    fun labelPara(m: com.example.nutriplan.data.database.MedidaEntity?): String {
+        if (m == null) return "Selecione uma data"
+        return medidasComLabel.firstOrNull { it.first.id == m.id }?.second ?: m.dataMedicao
+    }
+
+    val avaliacoes = remember { mutableStateListOf<AvaliacaoItem>() }
+
+    LaunchedEffect(medidasOrdenadas) {
+        if (medidasOrdenadas.isNotEmpty() && avaliacoes.isEmpty()) {
+            avaliacoes.add(AvaliacaoItem(medidasOrdenadas.firstOrNull()))
+            avaliacoes.add(AvaliacaoItem(medidasOrdenadas.lastOrNull()))
+        }
+    }
+
+    val selecionadasValidas by remember {
+        derivedStateOf {
+            avaliacoes
+                .mapNotNull { it.medida }
+                .distinctBy { it.id }
+                .sortedBy { it.dataCriacao }
+        }
+    }
+
+    val dadosDoGrafico by remember {
+        derivedStateOf { if (selecionadasValidas.size >= 2) selecionadasValidas else medidasOrdenadas }
     }
 
     if (isLoading) {
@@ -726,17 +755,7 @@ fun EvolucaoTab(
 
     if (medidasOrdenadas.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Icon(
-                    imageVector = Icons.Default.TrendingUp,
-                    contentDescription = null,
-                    modifier = Modifier.size(80.dp),
-                    tint = Color.Gray.copy(alpha = 0.5f)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Sem dados para evolução", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-                Text(text = "Adicione pelo menos 1 medida", style = MaterialTheme.typography.bodyMedium, color = Color.Gray.copy(alpha = 0.7f))
-            }
+            Text("Sem dados para evolução", color = Color.Gray)
         }
         return
     }
@@ -755,142 +774,251 @@ fun EvolucaoTab(
             color = PrimaryGreen
         )
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = PrimaryGreen),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.CalendarToday, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "1ª Avaliação (mais antiga)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                ExposedDropdownMenuBox(expanded = expanded1, onExpandedChange = { expanded1 = !expanded1 }) {
-                    OutlinedTextField(
-                        value = medidaSelecionada1?.dataMedicao ?: "Selecione uma data",
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = {
-                            Icon(
-                                imageVector = if (expanded1) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                contentDescription = null,
-                                tint = Color.White
-                            )
-                        },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color.White,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.7f)
+        avaliacoes.forEachIndexed { index, item ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = PrimaryGreen),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = when (index) {
+                                0 -> "1ª Avaliação (mais antiga)"
+                                1 -> "2ª Avaliação (mais recente)"
+                                else -> "${index + 1}ª Avaliação"
+                            },
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
-                    )
 
-                    ExposedDropdownMenu(
-                        expanded = expanded1,
-                        onDismissRequest = { expanded1 = false },
-                        modifier = Modifier.background(Color(0xFF1C1C1E))
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        if (avaliacoes.size > 2 && index >= 2) {
+                            IconButton(onClick = { avaliacoes.removeAt(index) }) {
+                                Icon(Icons.Default.Close, contentDescription = "Remover", tint = Color.White)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    ExposedDropdownMenuBox(
+                        expanded = item.expanded,
+                        onExpandedChange = { item.expanded = !item.expanded }
                     ) {
-                        medidasOrdenadas.forEach { medida ->
-                            DropdownMenuItem(
-                                text = { Text(text = medida.dataMedicao, color = Color.White) },
-                                onClick = {
-                                    medidaSelecionada1 = medida
-                                    expanded1 = false
-                                },
-                                colors = MenuDefaults.itemColors(textColor = Color.White)
+                        OutlinedTextField(
+                            value = labelPara(item.medida),
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = if (item.expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    tint = Color.White
+                                )
+                            },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Color.White,
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.7f)
                             )
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = item.expanded,
+                            onDismissRequest = { item.expanded = false },
+                            modifier = Modifier.background(Color(0xFF1C1C1E))
+                        ) {
+                            medidasComLabel.forEach { (medida, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(text = label, color = Color.White) },
+                                    onClick = {
+                                        item.medida = medida
+                                        item.expanded = false
+                                    },
+                                    colors = MenuDefaults.itemColors(textColor = Color.White)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        Card(
+        Button(
+            onClick = { avaliacoes.add(AvaliacaoItem(null)) },
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = PrimaryGreen),
-            shape = RoundedCornerShape(12.dp)
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen, contentColor = Color.White)
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.CalendarToday, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "2ª Avaliação (mais recente)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                ExposedDropdownMenuBox(expanded = expanded2, onExpandedChange = { expanded2 = !expanded2 }) {
-                    OutlinedTextField(
-                        value = medidaSelecionada2?.dataMedicao ?: "Selecione uma data",
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = {
-                            Icon(
-                                imageVector = if (expanded2) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                contentDescription = null,
-                                tint = Color.White
-                            )
-                        },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color.White,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.7f)
-                        )
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = expanded2,
-                        onDismissRequest = { expanded2 = false },
-                        modifier = Modifier.background(Color(0xFF1C1C1E))
-                    ) {
-                        medidasOrdenadas.forEach { medida ->
-                            DropdownMenuItem(
-                                text = { Text(text = medida.dataMedicao, color = Color.White) },
-                                onClick = {
-                                    medidaSelecionada2 = medida
-                                    expanded2 = false
-                                },
-                                colors = MenuDefaults.itemColors(textColor = Color.White)
-                            )
-                        }
-                    }
-                }
-            }
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Adicionar mais avaliação")
         }
 
-        if (medidaSelecionada1 != null && medidaSelecionada2 != null) {
-            ComparativoCompletoMedidas(
-                medida1 = medidaSelecionada1!!,
-                medida2 = medidaSelecionada2!!,
-                idade = idade
+        if (selecionadasValidas.size >= 2) {
+            ComparativoMultiAvaliacoes(avaliacoes = selecionadasValidas, idade = idade)
+        }
+
+        if (dadosDoGrafico.size >= 2) {
+            Text(
+                text = "Gráfico de Evolução (Peso + % Gordura + MLG)",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryGreen
             )
+            GraficoEvolucaoComparativoPesoGordura(
+                dados = dadosDoGrafico,
+                corPeso = Color(0xFF2196F3),
+                corGordura = Color(0xFFFF9800)
+            )
+        }
+    }
+}
 
-            if (medidasOrdenadas.size >= 2) {
-                Spacer(modifier = Modifier.height(8.dp))
+@Composable
+private fun ComparativoMultiAvaliacoes(
+    avaliacoes: List<com.example.nutriplan.data.database.MedidaEntity>,
+    idade: Int
+) {
+    val headers = remember(avaliacoes) {
+        avaliacoes.mapIndexed { idx, m -> "${idx + 1}ª Aval.\n${m.dataMedicao}" }
+    }
 
-                Text(
-                    text = "Gráfico de Evolução (Peso + % Gordura)",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryGreen
-                )
+    TabelaMultiColunasCard("Dados Antropométricos", Icons.Default.Person, headers) {
+        LinhaMultiColunas("Altura (cm)", avaliacoes.map { "%.0f".format(it.altura) })
+        LinhaMultiColunas("Peso (kg)", avaliacoes.map { "%.1f".format(it.peso) })
+        LinhaMultiColunas("IMC", avaliacoes.map { "%.2f".format(it.imc) })
+        LinhaMultiColunas("Classificação IMC", avaliacoes.map { CalculosMedidas.classificarIMC(it.imc) })
+    }
 
-                GraficoEvolucaoComparativoPesoGordura(
-                    dados = medidasOrdenadas,
-                    corPeso = Color(0xFF2196F3),
-                    corGordura = Color(0xFFFF9800)
-                )
+    val temAlgumPgc = avaliacoes.any { it.pgcValor != null }
+    if (temAlgumPgc) {
+        TabelaMultiColunasCard("Composição Corporal", Icons.Default.FitnessCenter, headers) {
+            LinhaMultiColunas("% Gordura", avaliacoes.map { it.pgcValor?.let { v -> "%.2f%%".format(v) } ?: "-" })
+            LinhaMultiColunas(
+                "Massa de Gordura (kg)",
+                avaliacoes.map { m -> m.pgcValor?.let { pgc -> "%.2f".format(CalculosMedidas.calcularMassaGordura(m.peso, pgc)) } ?: "-" }
+            )
+            LinhaMultiColunas(
+                "MLG (kg)",
+                avaliacoes.map { m ->
+                    val mlg = m.mlgKg ?: m.pgcValor?.let { pgc -> CalculosMedidas.calcularMLG(m.peso, pgc) }
+                    mlg?.let { "%.2f".format(it) } ?: "-"
+                }
+            )
+            LinhaMultiColunas(
+                "Massa Muscular (kg)",
+                avaliacoes.map { m -> "%.2f".format(CalculosMedidas.calcularMassaMuscular(m.peso, m.altura, idade)) }
+            )
+            LinhaMultiColunas("Massa Óssea (kg)", avaliacoes.map { m -> "%.2f".format(CalculosMedidas.calcularMassaOssea(m.altura)) })
+            LinhaMultiColunas("Massa Residual (kg)", avaliacoes.map { m -> "%.2f".format(CalculosMedidas.calcularMassaResidual(m.peso)) })
+        }
+    }
+
+    TabelaMultiColunasCard("Gasto Energético", Icons.Default.LocalFireDepartment, headers) {
+        LinhaMultiColunas("TMB (kcal/dia)", avaliacoes.map { "%.0f".format(it.tmbValor) })
+        LinhaMultiColunas("Método TMB", avaliacoes.map { it.tmbMetodo })
+        LinhaMultiColunas("Fator de Atividade", avaliacoes.map { it.faNivel })
+        LinhaMultiColunas("GET (kcal/dia)", avaliacoes.map { "%.0f".format(it.getValor) })
+    }
+
+    val temAlgumRcq = avaliacoes.any { it.rcqValor != null || !it.rcqClassificacao.isNullOrBlank() }
+    if (temAlgumRcq) {
+        TabelaMultiColunasCard("RCQ (Relação Cintura-Quadril)", Icons.Default.Analytics, headers) {
+            LinhaMultiColunas("RCQ", avaliacoes.map { it.rcqValor?.let { v -> "%.2f".format(v) } ?: "-" })
+            LinhaMultiColunas("Classificação", avaliacoes.map { it.rcqClassificacao ?: "-" })
+        }
+    }
+}
+
+@Composable
+private fun TabelaMultiColunasCard(
+    titulo: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    headers: List<String>,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
+                Icon(imageVector = icon, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryGreen)
+            }
+
+            val scroll = rememberScrollState()
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scroll)
+            ) {
+                Row(modifier = Modifier.padding(bottom = 8.dp)) {
+                    Text(
+                        text = "Medida",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        modifier = Modifier.width(170.dp)
+                    )
+
+                    headers.forEach { h ->
+                        Text(
+                            text = h,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            modifier = Modifier.width(120.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                Divider()
+                Column(content = content)
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
+@Composable
+private fun LinhaMultiColunas(
+    medida: String,
+    valores: List<String>
+) {
+    Row(
+        modifier = Modifier
+            .padding(vertical = 6.dp)
+            .heightIn(min = 24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = medida,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Black.copy(alpha = 0.8f),
+            modifier = Modifier.width(170.dp)
+        )
+
+        valores.forEach { v ->
+            Text(
+                text = v,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Black,
+                modifier = Modifier.width(120.dp),
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -900,19 +1028,35 @@ fun GraficoEvolucaoComparativoPesoGordura(
     corPeso: Color,
     corGordura: Color
 ) {
+    val corMlg = Color(0xFF4CAF50)
+    val yMin = 0f
+    val yMax = 140f
+    val step = 20f
+
+    val labelsX = remember(dados) {
+        val contagem = dados.groupingBy { it.dataMedicao }.eachCount()
+        val idx = mutableMapOf<String, Int>()
+        dados.map { m ->
+            val total = contagem[m.dataMedicao] ?: 1
+            if (total <= 1) m.dataMedicao
+            else {
+                val atual = (idx[m.dataMedicao] ?: 0) + 1
+                idx[m.dataMedicao] = atual
+                "${m.dataMedicao} ($atual)"
+            }
+        }
+    }
+
+    val temGordura = remember(dados) { dados.count { it.pgcValor != null } >= 2 }
+    val temMlg = remember(dados) { dados.count { it.mlgKg != null } >= 2 }
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(320.dp),
+        modifier = Modifier.fillMaxWidth().height(380.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -920,23 +1064,10 @@ fun GraficoEvolucaoComparativoPesoGordura(
             ) {
                 LegendaItem(cor = corPeso, texto = "Peso (kg)")
                 LegendaItem(cor = corGordura, texto = "% Gordura")
+                LegendaItem(cor = corMlg, texto = "MLG (kg)")
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            val pesos = remember(dados) { dados.map { it.peso } }
-            val pgcs = remember(dados) { dados.map { it.pgcValor } }
-
-            val temSerieGordura = remember(pgcs) { pgcs.count { it != null } >= 2 }
-
-            val pesoMax = pesos.maxOrNull() ?: 1f
-            val pesoMin = pesos.minOrNull() ?: 0f
-            val pesoRange = (pesoMax - pesoMin).takeIf { it > 0f } ?: 1f
-
-            val pgcValores = pgcs.filterNotNull()
-            val pgcMax = pgcValores.maxOrNull() ?: 1f
-            val pgcMin = pgcValores.minOrNull() ?: 0f
-            val pgcRange = (pgcMax - pgcMin).takeIf { it > 0f } ?: 1f
 
             Box(
                 modifier = Modifier
@@ -944,130 +1075,95 @@ fun GraficoEvolucaoComparativoPesoGordura(
                     .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
                     .padding(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "%.1f kg".format(pesoMax),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Bold
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val width = size.width
+                    val height = size.height
+                    val n = dados.size
+                    if (n == 0) return@Canvas
+
+                    val xLabelArea = 64f
+                    val chartHeight = height - xLabelArea
+                    val stepX = if (n > 1) width / (n - 1) else 0f
+
+                    fun clamp(v: Float) = v.coerceIn(yMin, yMax)
+                    fun yOf(value: Float): Float =
+                        chartHeight - ((clamp(value) - yMin) / (yMax - yMin) * chartHeight)
+
+                    val paintY = Paint().apply {
+                        isAntiAlias = true
+                        textSize = 26f
+                        color = android.graphics.Color.GRAY
+                    }
+                    val gridColor = Color(0xFFBDBDBD).copy(alpha = 0.45f)
+
+                    var v = yMin
+                    while (v <= yMax) {
+                        val y = yOf(v)
+                        drawLine(gridColor, Offset(0f, y), Offset(width, y), strokeWidth = 2f)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            v.toInt().toString(),
+                            0f,
+                            (y - 6f).coerceAtLeast(18f),
+                            paintY
                         )
-                        Text(
-                            text = if (temSerieGordura) "%.1f%%".format(pgcMax) else "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Bold
+                        v += step
+                    }
+
+                    for (i in 0 until n) {
+                        val x = i * stepX
+                        drawLine(
+                            color = gridColor.copy(alpha = 0.25f),
+                            start = Offset(x, 0f),
+                            end = Offset(x, chartHeight),
+                            strokeWidth = 2f
                         )
                     }
 
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    ) {
-                        val width = size.width
-                        val height = size.height
-                        val stepX = if (dados.size > 1) width / (dados.size - 1) else 0f
-
-                        fun yPeso(valor: Float): Float =
-                            height - ((valor - pesoMin) / pesoRange * height)
-
-                        fun yPgc(valor: Float): Float =
-                            height - ((valor - pgcMin) / pgcRange * height)
-
-                        if (dados.size > 1) {
-                            for (i in 0 until dados.size - 1) {
-                                val x1 = i * stepX
-                                val x2 = (i + 1) * stepX
-                                val y1 = yPeso(dados[i].peso)
-                                val y2 = yPeso(dados[i + 1].peso)
-
-                                drawLine(
-                                    color = corPeso,
-                                    start = Offset(x1, y1),
-                                    end = Offset(x2, y2),
-                                    strokeWidth = 6f
-                                )
-                            }
-                        }
-
-                        dados.forEachIndexed { index, m ->
-                            val x = index * stepX
-                            val y = yPeso(m.peso)
-                            drawCircle(color = corPeso, radius = 10f, center = Offset(x, y))
-                            drawCircle(color = Color.White, radius = 4f, center = Offset(x, y))
-                        }
-
-                        if (temSerieGordura && dados.size > 1) {
-                            for (i in 0 until dados.size - 1) {
-                                val v1 = dados[i].pgcValor
-                                val v2 = dados[i + 1].pgcValor
+                    fun drawSeries(color: Color, values: List<Float?>) {
+                        if (n > 1) {
+                            for (i in 0 until n - 1) {
+                                val v1 = values[i]
+                                val v2 = values[i + 1]
                                 if (v1 != null && v2 != null) {
                                     val x1 = i * stepX
                                     val x2 = (i + 1) * stepX
-                                    val y1 = yPgc(v1)
-                                    val y2 = yPgc(v2)
-
-                                    drawLine(
-                                        color = corGordura,
-                                        start = Offset(x1, y1),
-                                        end = Offset(x2, y2),
-                                        strokeWidth = 6f
-                                    )
+                                    drawLine(color, Offset(x1, yOf(v1)), Offset(x2, yOf(v2)), strokeWidth = 6f)
                                 }
                             }
-
-                            dados.forEachIndexed { index, m ->
-                                val v = m.pgcValor ?: return@forEachIndexed
-                                val x = index * stepX
-                                val y = yPgc(v)
-                                drawCircle(color = corGordura, radius = 10f, center = Offset(x, y))
-                                drawCircle(color = Color.White, radius = 4f, center = Offset(x, y))
+                        }
+                        values.forEachIndexed { i, vv ->
+                            if (vv != null) {
+                                val x = i * stepX
+                                val y = yOf(vv)
+                                drawCircle(color, radius = 10f, center = Offset(x, y))
+                                drawCircle(Color.White, radius = 4f, center = Offset(x, y))
                             }
                         }
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "%.1f kg".format(pesoMin),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (temSerieGordura) "%.1f%%".format(pgcMin) else "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Bold
-                        )
+                    drawSeries(corPeso, dados.map { it.peso })
+                    if (temGordura) drawSeries(corGordura, dados.map { it.pgcValor })
+                    if (temMlg) drawSeries(corMlg, dados.map { it.mlgKg })
+
+                    val paintX = Paint().apply {
+                        isAntiAlias = true
+                        textSize = 22f
+                        color = android.graphics.Color.DKGRAY
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = dados.first().dataMedicao,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
-                        )
-                        if (dados.size > 1) {
-                            Text(
-                                text = dados.last().dataMedicao,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
-                            )
+                    labelsX.forEachIndexed { i, label ->
+                        val x = i * stepX
+                        val baseY = chartHeight + 52f
+                        drawContext.canvas.nativeCanvas.apply {
+                            save()
+                            translate(x, baseY)
+                            rotate(-35f)
+                            val textWidth = paintX.measureText(label)
+                            var drawX = -textWidth / 2f
+                            if (x + drawX < 0f) drawX = -x
+                            if (x + drawX + textWidth > width) drawX = width - x - textWidth
+                            drawText(label, drawX, 0f, paintX)
+                            restore()
                         }
                     }
                 }
@@ -1079,259 +1175,8 @@ fun GraficoEvolucaoComparativoPesoGordura(
 @Composable
 private fun LegendaItem(cor: Color, texto: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(
-            modifier = Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(cor)
-        )
-        Text(
-            text = texto,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-fun ComparativoCompletoMedidas(
-    medida1: com.example.nutriplan.data.database.MedidaEntity,
-    medida2: com.example.nutriplan.data.database.MedidaEntity,
-    idade: Int
-) {
-    val massaMuscular1 = CalculosMedidas.calcularMassaMuscular(medida1.peso, medida1.altura, idade)
-    val massaMuscular2 = CalculosMedidas.calcularMassaMuscular(medida2.peso, medida2.altura, idade)
-
-    val massaOssea1 = CalculosMedidas.calcularMassaOssea(medida1.altura)
-    val massaOssea2 = CalculosMedidas.calcularMassaOssea(medida2.altura)
-
-    val massaResidual1 = CalculosMedidas.calcularMassaResidual(medida1.peso)
-    val massaResidual2 = CalculosMedidas.calcularMassaResidual(medida2.peso)
-
-    val massaGordura1 = medida1.pgcValor?.let { CalculosMedidas.calcularMassaGordura(medida1.peso, it) }
-    val massaGordura2 = medida2.pgcValor?.let { CalculosMedidas.calcularMassaGordura(medida2.peso, it) }
-
-    val mlg1 = medida1.pgcValor?.let { CalculosMedidas.calcularMLG(medida1.peso, it) }
-    val mlg2 = medida2.pgcValor?.let { CalculosMedidas.calcularMLG(medida2.peso, it) }
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TabelaComparativaCard(titulo = "Dados Antropométricos", icon = Icons.Default.Person) {
-            LinhaComparativa("Altura (cm)", "%.0f".format(medida1.altura), "%.0f".format(medida2.altura))
-            LinhaComparativa("Peso (kg)", "%.1f".format(medida1.peso), "%.1f".format(medida2.peso), medida1.peso, medida2.peso)
-            LinhaComparativa("IMC", "%.2f".format(medida1.imc), "%.2f".format(medida2.imc), medida1.imc, medida2.imc)
-            LinhaComparativa("Classificação IMC", CalculosMedidas.classificarIMC(medida1.imc), CalculosMedidas.classificarIMC(medida2.imc))
-        }
-
-        if (medida1.pgcValor != null && medida2.pgcValor != null) {
-            TabelaComparativaCard(titulo = "Composição Corporal", icon = Icons.Default.FitnessCenter) {
-                LinhaComparativa(
-                    "% Gordura",
-                    "%.2f%%".format(medida1.pgcValor),
-                    "%.2f%%".format(medida2.pgcValor),
-                    medida1.pgcValor!!,
-                    medida2.pgcValor!!
-                )
-
-                if (massaGordura1 != null && massaGordura2 != null) {
-                    LinhaComparativa(
-                        "Massa de Gordura (kg)",
-                        "%.2f".format(massaGordura1),
-                        "%.2f".format(massaGordura2),
-                        massaGordura1,
-                        massaGordura2
-                    )
-                }
-
-                if (mlg1 != null && mlg2 != null) {
-                    LinhaComparativa(
-                        "MLG (kg)",
-                        "%.2f".format(mlg1),
-                        "%.2f".format(mlg2),
-                        mlg1,
-                        mlg2,
-                        melhoraSeAumenta = true
-                    )
-                }
-
-                LinhaComparativa(
-                    "Massa Muscular (kg)",
-                    "%.2f".format(massaMuscular1),
-                    "%.2f".format(massaMuscular2),
-                    massaMuscular1,
-                    massaMuscular2,
-                    melhoraSeAumenta = true
-                )
-
-                LinhaComparativa("Massa Óssea (kg)", "%.2f".format(massaOssea1), "%.2f".format(massaOssea2), massaOssea1, massaOssea2)
-                LinhaComparativa("Massa Residual (kg)", "%.2f".format(massaResidual1), "%.2f".format(massaResidual2), massaResidual1, massaResidual2)
-            }
-        }
-
-        TabelaComparativaCard(titulo = "Gasto Energético", icon = Icons.Default.LocalFireDepartment) {
-            LinhaComparativa("TMB (kcal/dia)", "%.0f".format(medida1.tmbValor), "%.0f".format(medida2.tmbValor), medida1.tmbValor, medida2.tmbValor)
-            LinhaComparativa("Método TMB", medida1.tmbMetodo, medida2.tmbMetodo)
-            LinhaComparativa("Fator de Atividade", medida1.faNivel, medida2.faNivel)
-            LinhaComparativa("GET (kcal/dia)", "%.0f".format(medida1.getValor), "%.0f".format(medida2.getValor), medida1.getValor, medida2.getValor)
-        }
-
-        if (medida1.rcqValor != null && medida2.rcqValor != null) {
-            TabelaComparativaCard(titulo = "RCQ (Relação Cintura-Quadril)", icon = Icons.Default.Analytics) {
-                LinhaComparativa("RCQ", "%.2f".format(medida1.rcqValor), "%.2f".format(medida2.rcqValor), medida1.rcqValor!!, medida2.rcqValor!!)
-                LinhaComparativa("Classificação", medida1.rcqClassificacao ?: "-", medida2.rcqClassificacao ?: "-")
-            }
-        }
-    }
-}
-
-@Composable
-fun TabelaComparativaCard(
-    titulo: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
-            ) {
-                Icon(imageVector = icon, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryGreen)
-            }
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = "Medida",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.weight(1.2f)
-                )
-                Text(
-                    text = "1ª Aval.",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "2ª Aval.",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "Diferença",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.End
-                )
-            }
-
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-            content()
-        }
-    }
-}
-
-@Composable
-fun LinhaComparativa(
-    medida: String,
-    valor1: String,
-    valor2: String,
-    valorNum1: Float? = null,
-    valorNum2: Float? = null,
-    melhoraSeAumenta: Boolean = false
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = medida,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Black.copy(alpha = 0.8f),
-            modifier = Modifier.weight(1.2f)
-        )
-        Text(
-            text = valor1,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Black,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = valor2,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
-
-        if (valorNum1 != null && valorNum2 != null) {
-            val diferenca = valorNum2 - valorNum1
-            val melhorou = if (melhoraSeAumenta) diferenca > 0 else diferenca < 0
-
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = when {
-                        diferenca > 0 -> Icons.Default.ArrowUpward
-                        diferenca < 0 -> Icons.Default.ArrowDownward
-                        else -> Icons.Default.Remove
-                    },
-                    contentDescription = null,
-                    tint = when {
-                        diferenca == 0f -> Color.Gray
-                        melhorou -> Color(0xFF4CAF50)
-                        else -> Color(0xFFF44336)
-                    },
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = if (diferenca >= 0) "+%.2f".format(diferenca) else "%.2f".format(diferenca),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = when {
-                        diferenca == 0f -> Color.Gray
-                        melhorou -> Color(0xFF4CAF50)
-                        else -> Color(0xFFF44336)
-                    }
-                )
-            }
-        } else {
-            Text(
-                text = "-",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.End
-            )
-        }
+        Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(cor))
+        Text(text = texto, style = MaterialTheme.typography.bodySmall, color = Color.Gray, fontWeight = FontWeight.Bold)
     }
 }
 

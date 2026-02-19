@@ -28,61 +28,70 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
 }
 
 dependencies {
+    // AndroidX core / lifecycle / compose base
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // Compose (BOM)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // Extras
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.5")
 
-    // ViewModel Compose (ADICIONADO)
+    // ViewModel Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    // Recomendado para SavedStateHandle + getStateFlow
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
 
-    // Coil para carregar imagens
+    // Coil
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")
 
-// Room Database (versão atualizada para compatibilidade)
+    // Room (KSP)
     implementation("androidx.room:room-runtime:2.7.0-alpha12")
     implementation("androidx.room:room-ktx:2.7.0-alpha12")
     ksp("androidx.room:room-compiler:2.7.0-alpha12")
 
+    // VICO charts
+    implementation("com.patrykandpatrick.vico:compose:1.13.1")
+    implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
+    implementation("com.patrykandpatrick.vico:core:1.13.1")
+
+    // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // Compose tests
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-
-    dependencies {
-        // ... suas dependências existentes ...
-
-        // ========== BIBLIOTECA DE GRÁFICOS VICO ==========
-        implementation("com.patrykandpatrick.vico:compose:1.13.1")
-        implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
-        implementation("com.patrykandpatrick.vico:core:1.13.1")
-    }
 }

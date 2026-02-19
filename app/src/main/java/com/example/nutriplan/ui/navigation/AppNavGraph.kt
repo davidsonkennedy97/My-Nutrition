@@ -1,25 +1,31 @@
 package com.example.nutriplan.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.nutriplan.core.LanguagePreferences
+import com.example.nutriplan.ui.screens.DetalhesPacienteScreen
+import com.example.nutriplan.ui.screens.DietaEditorScreen
+import com.example.nutriplan.ui.screens.FormularioMedidaScreen
+import com.example.nutriplan.ui.screens.FormularioPacienteScreen
+import com.example.nutriplan.ui.screens.PacientesScreen
 import com.example.nutriplan.ui.screens.auth.ForgotPasswordScreen
 import com.example.nutriplan.ui.screens.auth.LoginScreen
 import com.example.nutriplan.ui.screens.auth.RegisterScreen
-import com.example.nutriplan.ui.screens.home.HomeScreen
-import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
-import com.example.nutriplan.ui.screens.PacientesScreen
-import com.example.nutriplan.ui.screens.FormularioPacienteScreen
-import com.example.nutriplan.ui.screens.DetalhesPacienteScreen
-import com.example.nutriplan.ui.screens.FormularioMedidaScreen
+import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
+import com.example.nutriplan.ui.screens.home.HomeScreen
+import com.example.nutriplan.ui.substitute.SubstituteNav
+import com.example.nutriplan.ui.substitute.SubstituteServiceLocator
+import com.example.nutriplan.ui.viewmodel.DietaViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -32,6 +38,19 @@ fun AppNavGraph(
     val context = LocalContext.current
     val prefs = LanguagePreferences(context.applicationContext)
     val scope = rememberCoroutineScope()
+
+    // ✅ ViewModel compartilhado entre DetalhesPacienteScreen e DietaEditorScreen
+    val dietaViewModel: DietaViewModel = viewModel()
+
+    // ✅ Garante que o módulo de substituição está pronto (catálogo pode ser setado depois via setFoods)
+    // OBS: isso exige que você tenha o SubstituteServiceLocator com ensureInitialized(...) e provideFoodCatalogRepository()
+    SubstituteServiceLocator.ensureInitialized(initialFoods = emptyList())
+
+    // ✅ Factory para a SubstituteViewModel
+    val substituteFactory = remember { SubstituteServiceLocator.provideViewModelFactory() }
+
+    // ✅ Repositório do catálogo para o SubstituteNav resolver food/portion do "current"
+    val foodCatalogRepo = remember { SubstituteServiceLocator.provideFoodCatalogRepository() }
 
     NavHost(
         navController = navController,
@@ -77,12 +96,8 @@ fun AppNavGraph(
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onNavigateToChat = {
-                    navController.navigate(Routes.CHAT_LIST)
-                },
-                onNavigateToPacientes = {
-                    navController.navigate(Routes.PACIENTES)
-                }
+                onNavigateToChat = { navController.navigate(Routes.CHAT_LIST) },
+                onNavigateToPacientes = { navController.navigate(Routes.PACIENTES) }
             )
         }
 
@@ -116,12 +131,8 @@ fun AppNavGraph(
                 nutritionistName = participantName,
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onArchiveClick = {
-                    navController.popBackStack()
-                }
+                onBackClick = { navController.popBackStack() },
+                onArchiveClick = { navController.popBackStack() }
             )
         }
 
@@ -129,11 +140,8 @@ fun AppNavGraph(
             PacientesScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
-                onNavigateToFormulario = {
-                    navController.navigate(Routes.PACIENTES_FORMULARIO)
-                },
+                onNavigateToFormulario = { navController.navigate(Routes.PACIENTES_FORMULARIO) },
                 onNavigateToDetalhes = { pacienteId ->
-                    // USA A ROTA DIRETAMENTE COM NAVEGAÇÃO CORRETA
                     navController.navigate("detalhes_paciente/$pacienteId?tabIndex=0")
                 },
                 onNavigateToEdit = { pacienteId ->
@@ -144,13 +152,9 @@ fun AppNavGraph(
                     scope.launch { prefs.setLanguage(nextLanguage) }
                 },
                 onThemeChange = {
-                    scope.launch {
-                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
-                    }
+                    scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
                 },
-                onOpenDrawer = {
-                    navController.popBackStack()
-                }
+                onOpenDrawer = { navController.popBackStack() }
             )
         }
 
@@ -159,26 +163,20 @@ fun AppNavGraph(
                 pacienteId = null,
                 isDarkTheme = isDarkTheme,
                 currentLanguage = currentLanguage,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onLanguageChange = {
                     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
                     scope.launch { prefs.setLanguage(nextLanguage) }
                 },
                 onThemeChange = {
-                    scope.launch {
-                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
-                    }
+                    scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
                 }
             )
         }
 
         composable(
             route = "pacientes_formulario/{pacienteId}",
-            arguments = listOf(
-                navArgument("pacienteId") { type = NavType.StringType }
-            )
+            arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
 
@@ -186,16 +184,33 @@ fun AppNavGraph(
                 pacienteId = pacienteId,
                 isDarkTheme = isDarkTheme,
                 currentLanguage = currentLanguage,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onLanguageChange = {
                     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
                     scope.launch { prefs.setLanguage(nextLanguage) }
                 },
                 onThemeChange = {
-                    scope.launch {
-                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
+                    scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
+                }
+            )
+        }
+
+        // ✅ ROTA REAL DO EDITOR (sem placeholder)
+        composable(
+            route = "dieta_editor/{pacienteId}",
+            arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
+
+            DietaEditorScreen(
+                pacienteId = pacienteId,
+                isDarkTheme = isDarkTheme,
+                dietaViewModel = dietaViewModel,
+                onBack = { navController.popBackStack() },
+                onSaveAndBackToDietaTab = {
+                    navController.popBackStack()
+                    navController.navigate("detalhes_paciente/$pacienteId?tabIndex=2") {
+                        launchSingleTop = true
                     }
                 }
             )
@@ -206,10 +221,7 @@ fun AppNavGraph(
             route = "detalhes_paciente/{pacienteId}?tabIndex={tabIndex}",
             arguments = listOf(
                 navArgument("pacienteId") { type = NavType.StringType },
-                navArgument("tabIndex") {
-                    type = NavType.IntType
-                    defaultValue = 0
-                }
+                navArgument("tabIndex") { type = NavType.IntType; defaultValue = 0 }
             )
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
@@ -220,12 +232,8 @@ fun AppNavGraph(
                 initialTabIndex = tabIndex,
                 isDarkTheme = isDarkTheme,
                 currentLanguage = currentLanguage,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onNavigateToEdit = { id ->
-                    navController.navigate("pacientes_formulario/$id")
-                },
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEdit = { id -> navController.navigate("pacientes_formulario/$id") },
                 onNavigateToFormularioMedida = { id, medidaId ->
                     if (medidaId != null) {
                         navController.navigate("medida_formulario/$id?medidaId=$medidaId")
@@ -233,14 +241,19 @@ fun AppNavGraph(
                         navController.navigate("medida_formulario/$id")
                     }
                 },
+
+                // ✅ necessário pra aba Dieta funcionar
+                dietaViewModel = dietaViewModel,
+                onNavigateToDietaEditor = { pid: String ->
+                    navController.navigate("dieta_editor/$pid")
+                },
+
                 onLanguageChange = {
                     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
                     scope.launch { prefs.setLanguage(nextLanguage) }
                 },
                 onThemeChange = {
-                    scope.launch {
-                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
-                    }
+                    scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
                 }
             )
         }
@@ -250,11 +263,7 @@ fun AppNavGraph(
             route = "medida_formulario/{pacienteId}?medidaId={medidaId}",
             arguments = listOf(
                 navArgument("pacienteId") { type = NavType.StringType },
-                navArgument("medidaId") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
+                navArgument("medidaId") { type = NavType.StringType; nullable = true; defaultValue = null }
             )
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
@@ -266,7 +275,6 @@ fun AppNavGraph(
                 isDarkTheme = isDarkTheme,
                 currentLanguage = currentLanguage,
                 onNavigateBack = {
-                    // VOLTA PARA A ABA MEDIDAS (tabIndex=1)
                     navController.popBackStack()
                     navController.navigate("detalhes_paciente/$pacienteId?tabIndex=1")
                 },
@@ -275,10 +283,17 @@ fun AppNavGraph(
                     scope.launch { prefs.setLanguage(nextLanguage) }
                 },
                 onThemeChange = {
-                    scope.launch {
-                        prefs.setThemeMode(if (isDarkTheme) "light" else "dark")
-                    }
+                    scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
                 }
+            )
+        }
+
+        // ✅ REGISTRA A TELA "SUBSTITUIR" (do jeito correto)
+        with(SubstituteNav) {
+            substituteDestination(
+                navController = navController,
+                viewModelFactory = substituteFactory,
+                foodCatalogRepository = foodCatalogRepo
             )
         }
     }
