@@ -17,7 +17,7 @@ import com.example.nutriplan.data.dieta.DietaRefeicaoEntity
         DietaRefeicaoEntity::class,
         DietaItemEntity::class
     ],
-    version = 6,
+    version = 7,  // aumentado de 6 para 7
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,7 +37,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "nutriplan_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration()  // mantém para dev (perde dados ao mudar schema)
                     .build()
 
                 INSTANCE = instance

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,7 +21,10 @@ import com.example.nutriplan.ui.screens.auth.RegisterScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
 import com.example.nutriplan.ui.screens.home.HomeScreen
+import com.example.nutriplan.ui.viewmodel.DietaViewModel
 import kotlinx.coroutines.launch
+
+// Mova Routes para um arquivo separado se quiser, ou deixe aqui sem duplicata
 
 @Composable
 fun AppNavGraph(
@@ -35,24 +39,24 @@ fun AppNavGraph(
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN,
+        startDestination = "login",
         modifier = modifier
     ) {
-        composable(Routes.LOGIN) {
+        composable("login") {
             LoginScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
-                onGoToRegister = { navController.navigate(Routes.REGISTER) },
-                onGoToForgotPassword = { navController.navigate(Routes.FORGOT_PASSWORD) },
+                onGoToRegister = { navController.navigate("register") },
+                onGoToForgotPassword = { navController.navigate("forgot_password") },
                 onLoginSuccess = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(Routes.REGISTER) {
+        composable("register") {
             RegisterScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
@@ -60,7 +64,7 @@ fun AppNavGraph(
             )
         }
 
-        composable(Routes.FORGOT_PASSWORD) {
+        composable("forgot_password") {
             ForgotPasswordScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
@@ -68,21 +72,21 @@ fun AppNavGraph(
             )
         }
 
-        composable(Routes.HOME) {
+        composable("home") {
             HomeScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
                 onLogout = {
-                    navController.navigate(Routes.LOGIN) {
+                    navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onNavigateToChat = { navController.navigate(Routes.CHAT_LIST) },
-                onNavigateToPacientes = { navController.navigate(Routes.PACIENTES) }
+                onNavigateToChat = { navController.navigate("chat_list") },
+                onNavigateToPacientes = { navController.navigate("pacientes") }
             )
         }
 
-        composable(Routes.CHAT_LIST) {
+        composable("chat_list") {
             ChatListScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
@@ -116,11 +120,11 @@ fun AppNavGraph(
             )
         }
 
-        composable(Routes.PACIENTES) {
+        composable("pacientes") {
             PacientesScreen(
                 currentLanguage = currentLanguage,
                 isDarkTheme = isDarkTheme,
-                onNavigateToFormulario = { navController.navigate(Routes.PACIENTES_FORMULARIO) },
+                onNavigateToFormulario = { navController.navigate("pacientes_formulario") },
                 onNavigateToDetalhes = { pacienteId ->
                     navController.navigate("detalhes_paciente/$pacienteId?tabIndex=0")
                 },
@@ -138,7 +142,7 @@ fun AppNavGraph(
             )
         }
 
-        composable(Routes.PACIENTES_FORMULARIO) {
+        composable("pacientes_formulario") {
             FormularioPacienteScreen(
                 pacienteId = null,
                 isDarkTheme = isDarkTheme,
@@ -183,9 +187,14 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
             val tabIndex = backStackEntry.arguments?.getInt("tabIndex") ?: 0
+
+            val dietaViewModel: DietaViewModel = viewModel()
+
             DetalhesPacienteScreen(
                 pacienteId = pacienteId,
                 initialTabIndex = tabIndex,
+                pacienteViewModel = viewModel(),
+                dietaViewModel = dietaViewModel,
                 isDarkTheme = isDarkTheme,
                 currentLanguage = currentLanguage,
                 onNavigateBack = { navController.popBackStack() },
@@ -197,6 +206,7 @@ fun AppNavGraph(
                         navController.navigate("medida_formulario/$id")
                     }
                 },
+                onNavigateToDietaEditor = { pid -> navController.navigate("dieta_editor/$pid") },
                 onLanguageChange = {
                     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
                     scope.launch { prefs.setLanguage(nextLanguage) }

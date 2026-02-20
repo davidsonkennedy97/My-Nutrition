@@ -28,12 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nutriplan.ui.theme.PrimaryGreen
 import com.example.nutriplan.ui.viewmodel.DietaViewModel
+import com.example.nutriplan.ui.viewmodel.MedidaViewModel
 import com.example.nutriplan.ui.viewmodel.PacienteViewModel
 import com.example.nutriplan.utils.CalculosMedidas
 import com.example.nutriplan.utils.calcularIdade
 import kotlinx.coroutines.launch
 import java.util.Locale
-
+import com.example.nutriplan.ui.screens.dieta.DietaTab
 
 fun formatarTelefoneParaExibicao(telefone: String): String {
     val digitos = telefone.filter { it.isDigit() }
@@ -50,15 +51,12 @@ fun formatarTelefoneParaExibicao(telefone: String): String {
 fun DetalhesPacienteScreen(
     pacienteId: String,
     initialTabIndex: Int = 0,
-    viewModel: PacienteViewModel = viewModel(),
+    pacienteViewModel: PacienteViewModel = viewModel(),
+    dietaViewModel: DietaViewModel = viewModel(),
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
     onNavigateToFormularioMedida: (String, String?) -> Unit = { _, _ -> },
-
-    // ✅ ADICIONADOS PARA DIETA
-    dietaViewModel: DietaViewModel,
     onNavigateToDietaEditor: (String) -> Unit,
-
     isDarkTheme: Boolean = false,
     currentLanguage: String = "pt",
     onLanguageChange: () -> Unit = {},
@@ -69,7 +67,7 @@ fun DetalhesPacienteScreen(
     val tabs = listOf("Dados", "Medidas", "Dieta", "Evolução")
 
     LaunchedEffect(pacienteId) {
-        paciente = viewModel.buscarPorId(pacienteId)
+        paciente = pacienteViewModel.buscarPorId(pacienteId)
     }
 
     if (paciente == null) {
@@ -163,12 +161,11 @@ fun DetalhesPacienteScreen(
                     isDarkTheme = isDarkTheme
                 )
 
-                // ✅ ABA DIETA CORRIGIDA
                 2 -> DietaTab(
                     pacienteId = pacienteId,
                     isDarkTheme = isDarkTheme,
                     dietaViewModel = dietaViewModel,
-                    onNavigateToDietEditor = { pid: String -> onNavigateToDietaEditor(pid) }
+                    onNavigateToDietaEditor = onNavigateToDietaEditor
                 )
 
                 3 -> EvolucaoTab(
@@ -332,7 +329,7 @@ fun MedidasTab(
     onNavigateToEdit: (String) -> Unit = {},
     isDarkTheme: Boolean = false
 ) {
-    val medidaViewModel: com.example.nutriplan.ui.viewmodel.MedidaViewModel = viewModel()
+    val medidaViewModel: MedidaViewModel = viewModel()
     val medidas by medidaViewModel.medidas.collectAsState()
     val isLoading by medidaViewModel.isLoading.collectAsState()
     val scope = rememberCoroutineScope()
@@ -563,6 +560,7 @@ fun MedidaCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalheMedidaDialog(
     medida: com.example.nutriplan.data.database.MedidaEntity,
@@ -675,10 +673,6 @@ fun DetalheMedidaDialog(
     )
 }
 
-/* ============================
-   ABA EVOLUÇÃO (multi-colunas + gráfico)
-   ============================ */
-
 private class AvaliacaoItem(initial: com.example.nutriplan.data.database.MedidaEntity?) {
     var medida by mutableStateOf(initial)
     var expanded by mutableStateOf(false)
@@ -690,7 +684,7 @@ fun EvolucaoTab(
     pacienteId: String,
     paciente: com.example.nutriplan.data.database.PacienteEntity
 ) {
-    val medidaViewModel: com.example.nutriplan.ui.viewmodel.MedidaViewModel = viewModel()
+    val medidaViewModel: MedidaViewModel = viewModel()
     val medidas by medidaViewModel.medidas.collectAsState()
     val isLoading by medidaViewModel.isLoading.collectAsState()
 
