@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,7 +11,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.nutriplan.core.LanguagePreferences
 import com.example.nutriplan.ui.screens.DetalhesPacienteScreen
-import com.example.nutriplan.ui.screens.DietaEditorScreen
 import com.example.nutriplan.ui.screens.FormularioMedidaScreen
 import com.example.nutriplan.ui.screens.FormularioPacienteScreen
 import com.example.nutriplan.ui.screens.PacientesScreen
@@ -21,10 +19,7 @@ import com.example.nutriplan.ui.screens.auth.LoginScreen
 import com.example.nutriplan.ui.screens.auth.RegisterScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
-import com.example.nutriplan.ui.screens.dieta.DietaPlanoScreen
-import com.example.nutriplan.ui.screens.dieta.RefeicaoScreen
 import com.example.nutriplan.ui.screens.home.HomeScreen
-import com.example.nutriplan.ui.viewmodel.DietaViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -37,8 +32,6 @@ fun AppNavGraph(
     val context = LocalContext.current
     val prefs = LanguagePreferences(context.applicationContext)
     val scope = rememberCoroutineScope()
-
-    val dietaViewModel: DietaViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -181,7 +174,6 @@ fun AppNavGraph(
             )
         }
 
-        // ── Detalhes do paciente ──────────────────────────────
         composable(
             route = "detalhes_paciente/{pacienteId}?tabIndex={tabIndex}",
             arguments = listOf(
@@ -205,10 +197,6 @@ fun AppNavGraph(
                         navController.navigate("medida_formulario/$id")
                     }
                 },
-                dietaViewModel = dietaViewModel,
-                onNavigateToDietaEditor = { pid ->
-                    navController.navigate("dieta_plano/$pid")
-                },
                 onLanguageChange = {
                     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
                     scope.launch { prefs.setLanguage(nextLanguage) }
@@ -219,7 +207,6 @@ fun AppNavGraph(
             )
         }
 
-        // ── Medidas ───────────────────────────────────────────
         composable(
             route = "medida_formulario/{pacienteId}?medidaId={medidaId}",
             arguments = listOf(
@@ -249,62 +236,6 @@ fun AppNavGraph(
                 onThemeChange = {
                     scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
                 }
-            )
-        }
-
-        // ── DIETA: lista de refeições do plano ────────────────
-        composable(
-            route = "dieta_plano/{planoId}",
-            arguments = listOf(
-                navArgument("planoId") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val planoId = backStackEntry.arguments?.getString("planoId") ?: ""
-            DietaPlanoScreen(
-                planoId = planoId,
-                tituloPlano = "Plano alimentar",
-                isDarkTheme = isDarkTheme,
-                dietaViewModel = dietaViewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onAbrirRefeicao = { refeicaoId, nomeRefeicao ->
-                    navController.navigate("dieta_refeicao/$refeicaoId/$nomeRefeicao")
-                }
-            )
-        }
-
-        // ── DIETA: alimentos da refeição ──────────────────────
-        composable(
-            route = "dieta_refeicao/{refeicaoId}/{nomeRefeicao}",
-            arguments = listOf(
-                navArgument("refeicaoId") { type = NavType.StringType },
-                navArgument("nomeRefeicao") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val refeicaoId = backStackEntry.arguments?.getString("refeicaoId") ?: ""
-            val nomeRefeicao = backStackEntry.arguments?.getString("nomeRefeicao") ?: ""
-            RefeicaoScreen(
-                refeicaoId = refeicaoId,
-                nomeRefeicao = nomeRefeicao,
-                isDarkTheme = isDarkTheme,
-                dietaViewModel = dietaViewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onBuscarAlimento = { _ -> }
-            )
-        }
-
-        // ── Rota legada (mantida para não quebrar) ────────────
-        composable(
-            route = "dieta_editor/{pacienteId}",
-            arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
-            DietaEditorScreen(
-                pacienteId = pacienteId,
-                isDarkTheme = isDarkTheme,
-                dietaViewModel = dietaViewModel,
-                navController = navController,
-                onBack = { navController.popBackStack() },
-                onSaveAndBackToDietaTab = { navController.popBackStack() }
             )
         }
     }
