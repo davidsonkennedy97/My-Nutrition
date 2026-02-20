@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,14 +47,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.nutriplan.data.taco.Macros
 import com.example.nutriplan.data.taco.TacoFood
 import com.example.nutriplan.data.taco.TacoRepository
 import com.example.nutriplan.data.taco.TacoRepositoryInMemory
 import com.example.nutriplan.data.taco.calcularMacros
+import com.example.nutriplan.data.taco.model.FoodItem
 import com.example.nutriplan.ui.dieta.DietaItem
 import com.example.nutriplan.ui.dieta.DietaPlano
 import com.example.nutriplan.ui.dieta.DietaRefeicao
+import com.example.nutriplan.ui.substitute.ObserveSubstituteResult
+import com.example.nutriplan.ui.substitute.SubstituteNav
+import com.example.nutriplan.ui.substitute.SubstituteResult
+import com.example.nutriplan.ui.substitute.SubstituteServiceLocator
 import com.example.nutriplan.ui.theme.PrimaryGreen
 import com.example.nutriplan.ui.viewmodel.DietaViewModel
 import kotlinx.coroutines.launch
@@ -78,11 +85,17 @@ fun DietaEditorScreen(
     pacienteId: String,
     isDarkTheme: Boolean,
     dietaViewModel: DietaViewModel,
+    navController: NavController,
     onBack: () -> Unit,
     onSaveAndBackToDietaTab: () -> Unit
 ) {
     val repo: TacoRepository = remember { TacoRepositoryInMemory() }
+    val repoInMemory = repo as? TacoRepositoryInMemory
+
+    val foodCatalogRepo = remember { SubstituteServiceLocator.provideFoodCatalogRepository() }
+
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     val screenBg = if (isDarkTheme) Color(0xFF000000) else Color.White
     val textPrimary = if (isDarkTheme) Color.White else Color.Black
@@ -95,6 +108,9 @@ fun DietaEditorScreen(
     var tituloPlano by remember { mutableStateOf("Dieta") }
     val refeicoes = remember { mutableStateListOf<RefeicaoUi>() }
     var showAddRefeicaoDialog by remember { mutableStateOf(false) }
+
+    // Só pra UI mostrar o último retorno e você ver que aplicou
+    val lastSubstituteBySlot = remember { mutableStateMapOf<String, SubstituteResult>() }
 
     val totalDoDia by remember {
         derivedStateOf {
@@ -134,6 +150,85 @@ fun DietaEditorScreen(
         dietaViewModel.salvarPlano(pacienteId, plano)
         onSaveAndBackToDietaTab()
     }
+
+    // ✅ recebe retorno do Substituir e aplica no item
+    ObserveSubstituteResult(
+        navController = navController,
+        onResult = { result ->
+            lastSubstituteBySlot[result.slotKey] = result
+
+            scope.launch {
+                // 1) achar o alimento selecionado (TacoFood)
+                val selectedTacoFood: TacoFood? = run {
+                    // tenta por ID no repositório antigo
+                    val fromRepo = repoInMemory?.buscarPorId(result.foodId)
+                    if (fromRepo != null) return@run fromRepo
+
+                    // tenta por ID no catálogo do Substituir e converte FoodItem -> TacoFood
+                    val allFoods = foodCatalogRepo.getAllFoods()
+                    val fromCatalog = allFoods.firstOrNull { it.id == result.foodId }
+                    fromCatalog?.toTacoFood()
+                }
+
+                if (selectedTacoFood == null) {
+                    snackbarHostState.showSnackbar(
+                        "Não consegui aplicar: alimento selecionado não encontrado (foodId=${result.foodId})."
+                    )
+                    return@launch
+                }
+
+                // 2) achar item pelo slotKey "refeicaoId:itemId"
+                val parts = result.slotKey.split(":")
+                if (parts.size != 2) {
+                    snackbarHostState.showSnackbar("slotKey inválido: ${result.slotKey}")
+                    return@launch
+                }
+                val refeicaoId = parts[0]
+                val itemId = parts[1]
+
+                val rIndex = refeicoes.indexOfFirst { it.id == refeicaoId }
+                if (rIndex == -1) {
+                    snackbarHostState.showSnackbar("Refeição não encontrada para slotKey=${result.slotKey}")
+                    return@launch
+                }
+
+                val refeicao = refeicoes[rIndex]
+                val iIndex = refeicao.itens.indexOfFirst { it.id == itemId }
+                if (iIndex == -1) {
+                    snackbarHostState.showSnackbar("Item não encontrado para slotKey=${result.slotKey}")
+                    return@launch
+                }
+
+                val oldItem = refeicao.itens[iIndex]
+
+                // 3) tentar aplicar porção/gramas (se existir no catálogo do Substituir)
+                val newGrams: Float = run {
+                    val allFoods = foodCatalogRepo.getAllFoods()
+                    val foodItem = allFoods.firstOrNull { it.id == result.foodId }
+                    val portion = foodItem?.portions?.firstOrNull { it.id == result.portionId }
+
+                    when {
+                        portion?.gramsEquivalent != null -> portion.gramsEquivalent
+                        isFallback100g(result.portionId) -> 100f
+                        else -> oldItem.gramas // fallback seguro
+                    }
+                }
+
+                // 4) recalcular macros do editor (usa TacoFood por 100g)
+                val newMacros = calcularMacros(newGrams, selectedTacoFood)
+
+                // 5) atualizar o item na lista (imutável -> substitui por cópia nova)
+                val updated = oldItem.copy(
+                    alimento = selectedTacoFood,
+                    gramas = newGrams,
+                    macros = newMacros
+                )
+                refeicao.itens[iIndex] = updated
+
+                snackbarHostState.showSnackbar("Substituição aplicada: ${selectedTacoFood.nome}")
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -229,9 +324,11 @@ fun DietaEditorScreen(
                 ) {
                     refeicoes.forEachIndexed { index, refeicao ->
                         RefeicaoCard(
+                            pacienteId = pacienteId,
+                            navController = navController,
                             refeicao = refeicao,
                             repo = repo,
-                            isDarkTheme = isDarkTheme,
+                            lastSubstituteBySlot = lastSubstituteBySlot,
                             onRemoveRefeicao = { refeicoes.removeAt(index) }
                         )
                     }
@@ -330,16 +427,14 @@ private fun AddRefeicaoDialog(
 
 @Composable
 private fun RefeicaoCard(
+    pacienteId: String,
+    navController: NavController,
     refeicao: RefeicaoUi,
     repo: TacoRepository,
-    isDarkTheme: Boolean,
+    lastSubstituteBySlot: Map<String, SubstituteResult>,
     onRemoveRefeicao: () -> Unit
 ) {
     var showAddFood by remember { mutableStateOf(false) }
-
-    val dialogBg = Color(0xFF000000)
-    val dialogText = Color.White
-    val dialogTextDim = Color.White.copy(alpha = 0.85f)
 
     val subtotal by remember {
         derivedStateOf {
@@ -403,6 +498,9 @@ private fun RefeicaoCard(
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     refeicao.itens.forEach { item ->
+                        val slotKey = "${refeicao.id}:${item.id}"
+                        val last = lastSubstituteBySlot[slotKey]
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -418,9 +516,34 @@ private fun RefeicaoCard(
                                     text = "P ${"%.1f".format(item.macros.proteina)}g  C ${"%.1f".format(item.macros.carboidrato)}g  G ${"%.1f".format(item.macros.gordura)}g",
                                     color = Color.White.copy(alpha = 0.9f)
                                 )
+
+                                if (last != null) {
+                                    Text(
+                                        text = "Última escolha: ${last.foodId}",
+                                        color = Color.White.copy(alpha = 0.85f)
+                                    )
+                                }
                             }
-                            TextButton(onClick = { refeicao.itens.remove(item) }) {
-                                Text("Remover", color = Color.White)
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                TextButton(
+                                    onClick = {
+                                        with(SubstituteNav) {
+                                            navController.navigateToSubstitute(
+                                                pacienteId = pacienteId,
+                                                slotKey = slotKey,
+                                                originalFoodId = item.alimento.id,
+                                                currentFoodId = item.alimento.id,
+                                                currentPortionId = "fallback_default_100g",
+                                                customName = item.alimento.nome
+                                            )
+                                        }
+                                    }
+                                ) { Text("Substituir", color = Color.White) }
+
+                                TextButton(onClick = { refeicao.itens.remove(item) }) {
+                                    Text("Remover", color = Color.White)
+                                }
                             }
                         }
                     }
@@ -439,9 +562,9 @@ private fun RefeicaoCard(
     if (showAddFood) {
         AddFoodDialog(
             repo = repo,
-            dialogBg = dialogBg,
-            dialogText = dialogText,
-            dialogTextDim = dialogTextDim,
+            dialogBg = Color(0xFF000000),
+            dialogText = Color.White,
+            dialogTextDim = Color.White.copy(alpha = 0.85f),
             onDismiss = { showAddFood = false },
             onAdd = { food, gramas ->
                 val macrosCalculadas = calcularMacros(gramas, food)
@@ -566,4 +689,23 @@ private fun AddFoodDialog(
             TextButton(onClick = onDismiss) { Text("Cancelar", color = dialogText) }
         }
     )
+}
+
+// -------- helpers locais --------
+
+private fun FoodItem.toTacoFood(): TacoFood {
+    return TacoFood(
+        id = this.id,
+        nome = this.nome,
+        proteina100g = this.nutrientsBase.proteinG,
+        carboidrato100g = this.nutrientsBase.carbsG,
+        gordura100g = this.nutrientsBase.fatG
+    )
+}
+
+private fun isFallback100g(portionId: String): Boolean {
+    if (portionId.isBlank()) return true
+    return portionId == "fallback_default_100g" ||
+            portionId.endsWith("_default_100g") ||
+            portionId.endsWith("_fallback_100g")
 }

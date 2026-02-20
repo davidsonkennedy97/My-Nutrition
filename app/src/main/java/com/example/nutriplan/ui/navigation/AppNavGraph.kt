@@ -1,6 +1,8 @@
 package com.example.nutriplan.ui.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -25,6 +27,7 @@ import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
 import com.example.nutriplan.ui.screens.home.HomeScreen
 import com.example.nutriplan.ui.substitute.SubstituteNav
 import com.example.nutriplan.ui.substitute.SubstituteServiceLocator
+import com.example.nutriplan.ui.substitute.TacoCatalogBootstrapper
 import com.example.nutriplan.ui.viewmodel.DietaViewModel
 import kotlinx.coroutines.launch
 
@@ -39,18 +42,28 @@ fun AppNavGraph(
     val prefs = LanguagePreferences(context.applicationContext)
     val scope = rememberCoroutineScope()
 
-    // ✅ ViewModel compartilhado entre DetalhesPacienteScreen e DietaEditorScreen
+    // ✅ ViewModel compartilhado
     val dietaViewModel: DietaViewModel = viewModel()
 
-    // ✅ Garante que o módulo de substituição está pronto (catálogo pode ser setado depois via setFoods)
-    // OBS: isso exige que você tenha o SubstituteServiceLocator com ensureInitialized(...) e provideFoodCatalogRepository()
+    // ✅ Inicializa módulo de substituição (o catálogo real é setado pelo bootstrapper abaixo)
     SubstituteServiceLocator.ensureInitialized(initialFoods = emptyList())
 
-    // ✅ Factory para a SubstituteViewModel
+    // ✅ Factory + Repo para o SubstituteNav
     val substituteFactory = remember { SubstituteServiceLocator.provideViewModelFactory() }
-
-    // ✅ Repositório do catálogo para o SubstituteNav resolver food/portion do "current"
     val foodCatalogRepo = remember { SubstituteServiceLocator.provideFoodCatalogRepository() }
+
+    // ✅ Carrega TACO do assets e injeta no Substituir (1x)
+    LaunchedEffect(Unit) {
+        try {
+            val count = TacoCatalogBootstrapper.ensureLoaded(
+                context = context.applicationContext,
+                assetFileName = "Taco.csv"
+            )
+            Log.d("TACO", "Bootstrap do catálogo concluído. Itens carregados agora=$count")
+        } catch (e: Exception) {
+            Log.e("TACO", "Falha no bootstrap do catálogo: ${e.message}", e)
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -195,7 +208,6 @@ fun AppNavGraph(
             )
         }
 
-        // ✅ ROTA REAL DO EDITOR (sem placeholder)
         composable(
             route = "dieta_editor/{pacienteId}",
             arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
@@ -206,6 +218,7 @@ fun AppNavGraph(
                 pacienteId = pacienteId,
                 isDarkTheme = isDarkTheme,
                 dietaViewModel = dietaViewModel,
+                navController = navController,
                 onBack = { navController.popBackStack() },
                 onSaveAndBackToDietaTab = {
                     navController.popBackStack()
@@ -216,7 +229,6 @@ fun AppNavGraph(
             )
         }
 
-        // ========== DETALHES DO PACIENTE (COM SUPORTE A ABA) ==========
         composable(
             route = "detalhes_paciente/{pacienteId}?tabIndex={tabIndex}",
             arguments = listOf(
@@ -241,13 +253,10 @@ fun AppNavGraph(
                         navController.navigate("medida_formulario/$id")
                     }
                 },
-
-                // ✅ necessário pra aba Dieta funcionar
                 dietaViewModel = dietaViewModel,
                 onNavigateToDietaEditor = { pid: String ->
                     navController.navigate("dieta_editor/$pid")
                 },
-
                 onLanguageChange = {
                     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
                     scope.launch { prefs.setLanguage(nextLanguage) }
@@ -258,12 +267,15 @@ fun AppNavGraph(
             )
         }
 
-        // ========== FORMULÁRIO DE MEDIDA (NOVA E EDITAR) ==========
         composable(
             route = "medida_formulario/{pacienteId}?medidaId={medidaId}",
             arguments = listOf(
                 navArgument("pacienteId") { type = NavType.StringType },
-                navArgument("medidaId") { type = NavType.StringType; nullable = true; defaultValue = null }
+                navArgument("medidaId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
             )
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
@@ -288,7 +300,6 @@ fun AppNavGraph(
             )
         }
 
-        // ✅ REGISTRA A TELA "SUBSTITUIR" (do jeito correto)
         with(SubstituteNav) {
             substituteDestination(
                 navController = navController,
