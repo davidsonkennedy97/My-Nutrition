@@ -1,84 +1,103 @@
 package com.example.nutriplan.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
-import com.example.nutriplan.ui.dieta.DietaPlano
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.nutriplan.data.database.AppDatabase
+import com.example.nutriplan.data.dieta.DietaItemEntity
+import com.example.nutriplan.data.dieta.DietaPlanoEntity
+import com.example.nutriplan.data.dieta.DietaRefeicaoEntity
+import com.example.nutriplan.data.dieta.DietaRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
+import java.util.UUID
 
-class DietaViewModel : ViewModel() {
+class DietaViewModel(app: Application) : AndroidViewModel(app) {
 
-    // Map<pacienteId, List<planos>>
-    private val _planosPorPaciente = MutableStateFlow<Map<String, List<DietaPlano>>>(emptyMap())
-    val planosPorPaciente: StateFlow<Map<String, List<DietaPlano>>> = _planosPorPaciente.asStateFlow()
+    private val repository = DietaRepository(
+        AppDatabase.getDatabase(app).dietaDao()
+    )
 
-    fun listarPlanos(pacienteId: String): List<DietaPlano> {
-        return _planosPorPaciente.value[pacienteId].orEmpty()
-    }
+    // ─── Plano ────────────────────────────────────────────────
+    fun listarPlanos(pacienteId: String): Flow<List<DietaPlanoEntity>> =
+        repository.listarPlanos(pacienteId)
 
-    fun obterPlano(pacienteId: String, planoId: String): DietaPlano? {
-        return listarPlanos(pacienteId).firstOrNull { it.id == planoId }
-    }
-
-    /**
-     * Salva (insere) o plano como "mais recente primeiro".
-     * Se já existir um plano com o mesmo id, substitui e também sobe para o topo.
-     */
-    fun salvarPlano(pacienteId: String, plano: DietaPlano) {
-        _planosPorPaciente.update { atual ->
-            val listaAtual = atual[pacienteId].orEmpty()
-            val semEsseId = listaAtual.filterNot { it.id == plano.id }
-            val novaLista = listOf(plano) + semEsseId
-            atual + (pacienteId to novaLista)
+    fun criarPlano(pacienteId: String, titulo: String, data: String) {
+        viewModelScope.launch {
+            repository.inserirPlano(
+                DietaPlanoEntity(
+                    id = UUID.randomUUID().toString(),
+                    pacienteId = pacienteId,
+                    titulo = titulo,
+                    dataCriacao = data
+                )
+            )
         }
     }
 
-    /**
-     * Atualiza um plano existente sem mexer na ordem da lista.
-     * Se não encontrar o planoId, não altera nada.
-     */
-    fun atualizarPlanoMantendoOrdem(
-        pacienteId: String,
-        planoId: String,
-        novoPlano: DietaPlano
+    fun deletarPlano(plano: DietaPlanoEntity) {
+        viewModelScope.launch { repository.deletarPlano(plano) }
+    }
+
+    // ─── Refeição ─────────────────────────────────────────────
+    fun listarRefeicoes(planoId: String): Flow<List<DietaRefeicaoEntity>> =
+        repository.listarRefeicoes(planoId)
+
+    fun criarRefeicao(planoId: String, nome: String, horario: String) {
+        viewModelScope.launch {
+            repository.inserirRefeicao(
+                DietaRefeicaoEntity(
+                    id = UUID.randomUUID().toString(),
+                    planoId = planoId,
+                    nome = nome,
+                    horario = horario
+                )
+            )
+        }
+    }
+
+    fun deletarRefeicao(refeicao: DietaRefeicaoEntity) {
+        viewModelScope.launch { repository.deletarRefeicao(refeicao) }
+    }
+
+    fun atualizarRefeicao(refeicao: DietaRefeicaoEntity) {
+        viewModelScope.launch { repository.atualizarRefeicao(refeicao) }
+    }
+
+    // ─── Item (alimento) ──────────────────────────────────────
+    fun listarItens(refeicaoId: String): Flow<List<DietaItemEntity>> =
+        repository.listarItens(refeicaoId)
+
+    fun adicionarItem(
+        refeicaoId: String,
+        nome: String,
+        origem: String,
+        quantidade: Float,
+        unidade: String,
+        proteina: Float,
+        lipidios: Float,
+        carboidrato: Float,
+        calorias: Float
     ) {
-        _planosPorPaciente.update { atual ->
-            val listaAtual = atual[pacienteId].orEmpty()
-            if (listaAtual.none { it.id == planoId }) return@update atual
-
-            val novaLista = listaAtual.map { plano ->
-                if (plano.id == planoId) novoPlano else plano
-            }
-            atual + (pacienteId to novaLista)
+        viewModelScope.launch {
+            repository.inserirItem(
+                DietaItemEntity(
+                    id = UUID.randomUUID().toString(),
+                    refeicaoId = refeicaoId,
+                    alimentoNome = nome,
+                    origem = origem,
+                    quantidade = quantidade,
+                    unidade = unidade,
+                    proteina = proteina,
+                    lipidios = lipidios,
+                    carboidrato = carboidrato,
+                    calorias = calorias
+                )
+            )
         }
     }
 
-    /**
-     * Atualiza um plano existente aplicando uma transformação (sem depender de copy()).
-     * Se não encontrar o planoId, não altera nada.
-     */
-    fun atualizarPlano(
-        pacienteId: String,
-        planoId: String,
-        transform: (DietaPlano) -> DietaPlano
-    ) {
-        _planosPorPaciente.update { atual ->
-            val listaAtual = atual[pacienteId].orEmpty()
-            if (listaAtual.none { it.id == planoId }) return@update atual
-
-            val novaLista = listaAtual.map { plano ->
-                if (plano.id == planoId) transform(plano) else plano
-            }
-            atual + (pacienteId to novaLista)
-        }
-    }
-
-    fun deletarPlano(pacienteId: String, planoId: String) {
-        _planosPorPaciente.update { atual ->
-            val listaAtual = atual[pacienteId].orEmpty()
-            val novaLista = listaAtual.filterNot { it.id == planoId }
-            atual + (pacienteId to novaLista)
-        }
+    fun deletarItem(item: DietaItemEntity) {
+        viewModelScope.launch { repository.deletarItem(item) }
     }
 }

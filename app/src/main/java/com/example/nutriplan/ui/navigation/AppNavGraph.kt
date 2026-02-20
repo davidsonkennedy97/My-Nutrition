@@ -1,9 +1,6 @@
 package com.example.nutriplan.ui.navigation
 
-import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,10 +21,9 @@ import com.example.nutriplan.ui.screens.auth.LoginScreen
 import com.example.nutriplan.ui.screens.auth.RegisterScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
+import com.example.nutriplan.ui.screens.dieta.DietaPlanoScreen
+import com.example.nutriplan.ui.screens.dieta.RefeicaoScreen
 import com.example.nutriplan.ui.screens.home.HomeScreen
-import com.example.nutriplan.ui.substitute.SubstituteNav
-import com.example.nutriplan.ui.substitute.SubstituteServiceLocator
-import com.example.nutriplan.ui.substitute.TacoCatalogBootstrapper
 import com.example.nutriplan.ui.viewmodel.DietaViewModel
 import kotlinx.coroutines.launch
 
@@ -42,28 +38,7 @@ fun AppNavGraph(
     val prefs = LanguagePreferences(context.applicationContext)
     val scope = rememberCoroutineScope()
 
-    // ✅ ViewModel compartilhado
     val dietaViewModel: DietaViewModel = viewModel()
-
-    // ✅ Inicializa módulo de substituição (o catálogo real é setado pelo bootstrapper abaixo)
-    SubstituteServiceLocator.ensureInitialized(initialFoods = emptyList())
-
-    // ✅ Factory + Repo para o SubstituteNav
-    val substituteFactory = remember { SubstituteServiceLocator.provideViewModelFactory() }
-    val foodCatalogRepo = remember { SubstituteServiceLocator.provideFoodCatalogRepository() }
-
-    // ✅ Carrega TACO do assets e injeta no Substituir (1x)
-    LaunchedEffect(Unit) {
-        try {
-            val count = TacoCatalogBootstrapper.ensureLoaded(
-                context = context.applicationContext,
-                assetFileName = "Taco.csv"
-            )
-            Log.d("TACO", "Bootstrap do catálogo concluído. Itens carregados agora=$count")
-        } catch (e: Exception) {
-            Log.e("TACO", "Falha no bootstrap do catálogo: ${e.message}", e)
-        }
-    }
 
     NavHost(
         navController = navController,
@@ -138,7 +113,6 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val conversationId = backStackEntry.arguments?.getString("conversationId") ?: ""
             val participantName = backStackEntry.arguments?.getString("participantName") ?: ""
-
             ChatDetailScreen(
                 conversationId = conversationId,
                 nutritionistName = participantName,
@@ -192,7 +166,6 @@ fun AppNavGraph(
             arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
-
             FormularioPacienteScreen(
                 pacienteId = pacienteId,
                 isDarkTheme = isDarkTheme,
@@ -208,27 +181,7 @@ fun AppNavGraph(
             )
         }
 
-        composable(
-            route = "dieta_editor/{pacienteId}",
-            arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
-
-            DietaEditorScreen(
-                pacienteId = pacienteId,
-                isDarkTheme = isDarkTheme,
-                dietaViewModel = dietaViewModel,
-                navController = navController,
-                onBack = { navController.popBackStack() },
-                onSaveAndBackToDietaTab = {
-                    navController.popBackStack()
-                    navController.navigate("detalhes_paciente/$pacienteId?tabIndex=2") {
-                        launchSingleTop = true
-                    }
-                }
-            )
-        }
-
+        // ── Detalhes do paciente ──────────────────────────────
         composable(
             route = "detalhes_paciente/{pacienteId}?tabIndex={tabIndex}",
             arguments = listOf(
@@ -238,7 +191,6 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
             val tabIndex = backStackEntry.arguments?.getInt("tabIndex") ?: 0
-
             DetalhesPacienteScreen(
                 pacienteId = pacienteId,
                 initialTabIndex = tabIndex,
@@ -254,8 +206,8 @@ fun AppNavGraph(
                     }
                 },
                 dietaViewModel = dietaViewModel,
-                onNavigateToDietaEditor = { pid: String ->
-                    navController.navigate("dieta_editor/$pid")
+                onNavigateToDietaEditor = { pid ->
+                    navController.navigate("dieta_plano/$pid")
                 },
                 onLanguageChange = {
                     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
@@ -267,6 +219,7 @@ fun AppNavGraph(
             )
         }
 
+        // ── Medidas ───────────────────────────────────────────
         composable(
             route = "medida_formulario/{pacienteId}?medidaId={medidaId}",
             arguments = listOf(
@@ -280,7 +233,6 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
             val medidaId = backStackEntry.arguments?.getString("medidaId")
-
             FormularioMedidaScreen(
                 pacienteId = pacienteId,
                 medidaId = medidaId,
@@ -300,11 +252,59 @@ fun AppNavGraph(
             )
         }
 
-        with(SubstituteNav) {
-            substituteDestination(
+        // ── DIETA: lista de refeições do plano ────────────────
+        composable(
+            route = "dieta_plano/{planoId}",
+            arguments = listOf(
+                navArgument("planoId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val planoId = backStackEntry.arguments?.getString("planoId") ?: ""
+            DietaPlanoScreen(
+                planoId = planoId,
+                tituloPlano = "Plano alimentar",
+                isDarkTheme = isDarkTheme,
+                dietaViewModel = dietaViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onAbrirRefeicao = { refeicaoId, nomeRefeicao ->
+                    navController.navigate("dieta_refeicao/$refeicaoId/$nomeRefeicao")
+                }
+            )
+        }
+
+        // ── DIETA: alimentos da refeição ──────────────────────
+        composable(
+            route = "dieta_refeicao/{refeicaoId}/{nomeRefeicao}",
+            arguments = listOf(
+                navArgument("refeicaoId") { type = NavType.StringType },
+                navArgument("nomeRefeicao") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val refeicaoId = backStackEntry.arguments?.getString("refeicaoId") ?: ""
+            val nomeRefeicao = backStackEntry.arguments?.getString("nomeRefeicao") ?: ""
+            RefeicaoScreen(
+                refeicaoId = refeicaoId,
+                nomeRefeicao = nomeRefeicao,
+                isDarkTheme = isDarkTheme,
+                dietaViewModel = dietaViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onBuscarAlimento = { _ -> }
+            )
+        }
+
+        // ── Rota legada (mantida para não quebrar) ────────────
+        composable(
+            route = "dieta_editor/{pacienteId}",
+            arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
+            DietaEditorScreen(
+                pacienteId = pacienteId,
+                isDarkTheme = isDarkTheme,
+                dietaViewModel = dietaViewModel,
                 navController = navController,
-                viewModelFactory = substituteFactory,
-                foodCatalogRepository = foodCatalogRepo
+                onBack = { navController.popBackStack() },
+                onSaveAndBackToDietaTab = { navController.popBackStack() }
             )
         }
     }
