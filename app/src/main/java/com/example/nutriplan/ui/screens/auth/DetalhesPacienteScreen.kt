@@ -34,6 +34,7 @@ import com.example.nutriplan.utils.calcularIdade
 import kotlinx.coroutines.launch
 import java.util.Locale
 
+
 fun formatarTelefoneParaExibicao(telefone: String): String {
     val digitos = telefone.filter { it.isDigit() }
     return when (digitos.length) {

@@ -4,36 +4,15 @@ import kotlinx.coroutines.flow.Flow
 
 class DietaRepository(private val dao: DietaDao) {
 
-    // ─── Plano ────────────────────────────────────────────────
-    suspend fun inserirPlano(plano: DietaPlanoEntity) =
-        dao.inserirPlano(plano)
+    suspend fun inserirPlano(plano: DietaPlanoEntity): Long = dao.inserirPlano(plano)
+    fun getPlanosPorPaciente(pacienteId: Int): Flow<List<DietaPlanoEntity>> = dao.getPlanosPorPaciente(pacienteId)
+    suspend fun deletarPlano(plano: DietaPlanoEntity) = dao.deletarPlano(plano)
 
-    suspend fun deletarPlano(plano: DietaPlanoEntity) =
-        dao.deletarPlano(plano)
+    suspend fun inserirRefeicao(refeicao: DietaRefeicaoEntity): Long = dao.inserirRefeicao(refeicao)
+    fun getRefeicoesPorPlano(planoId: Int): Flow<List<DietaRefeicaoEntity>> = dao.getRefeicoesPorPlano(planoId)
+    suspend fun deletarRefeicao(refeicao: DietaRefeicaoEntity) = dao.deletarRefeicao(refeicao)
 
-    fun listarPlanos(pacienteId: String): Flow<List<DietaPlanoEntity>> =
-        dao.listarPlanos(pacienteId)
-
-    // ─── Refeição ─────────────────────────────────────────────
-    suspend fun inserirRefeicao(refeicao: DietaRefeicaoEntity) =
-        dao.inserirRefeicao(refeicao)
-
-    suspend fun deletarRefeicao(refeicao: DietaRefeicaoEntity) =
-        dao.deletarRefeicao(refeicao)
-
-    suspend fun atualizarRefeicao(refeicao: DietaRefeicaoEntity) =
-        dao.atualizarRefeicao(refeicao)
-
-    fun listarRefeicoes(planoId: String): Flow<List<DietaRefeicaoEntity>> =
-        dao.listarRefeicoes(planoId)
-
-    // ─── Item (alimento) ──────────────────────────────────────
-    suspend fun inserirItem(item: DietaItemEntity) =
-        dao.inserirItem(item)
-
-    suspend fun deletarItem(item: DietaItemEntity) =
-        dao.deletarItem(item)
-
-    fun listarItens(refeicaoId: String): Flow<List<DietaItemEntity>> =
-        dao.listarItens(refeicaoId)
+    suspend fun inserirItem(item: DietaItemEntity) = dao.inserirItem(item)
+    fun getItensPorRefeicao(refeicaoId: Int): Flow<List<DietaItemEntity>> = dao.getItensPorRefeicao(refeicaoId)
+    suspend fun deletarItem(item: DietaItemEntity) = dao.deletarItem(item)
 }

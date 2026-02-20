@@ -6,36 +6,33 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DietaDao {
 
-    // ─── Plano ────────────────────────────────────────────────
+    // PLANO
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun inserirPlano(plano: DietaPlanoEntity)
+    suspend fun inserirPlano(plano: DietaPlanoEntity): Long
+
+    @Query("SELECT * FROM dieta_plano WHERE pacienteId = :pacienteId")
+    fun getPlanosPorPaciente(pacienteId: Int): Flow<List<DietaPlanoEntity>>
 
     @Delete
     suspend fun deletarPlano(plano: DietaPlanoEntity)
 
-    @Query("SELECT * FROM dieta_plano WHERE pacienteId = :pacienteId ORDER BY dataCriacao DESC")
-    fun listarPlanos(pacienteId: String): Flow<List<DietaPlanoEntity>>
-
-    // ─── Refeição ─────────────────────────────────────────────
+    // REFEIÇÃO
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun inserirRefeicao(refeicao: DietaRefeicaoEntity)
+    suspend fun inserirRefeicao(refeicao: DietaRefeicaoEntity): Long
+
+    @Query("SELECT * FROM dieta_refeicao WHERE planoId = :planoId")
+    fun getRefeicoesPorPlano(planoId: Int): Flow<List<DietaRefeicaoEntity>>
 
     @Delete
     suspend fun deletarRefeicao(refeicao: DietaRefeicaoEntity)
 
-    @Update
-    suspend fun atualizarRefeicao(refeicao: DietaRefeicaoEntity)
-
-    @Query("SELECT * FROM dieta_refeicao WHERE planoId = :planoId ORDER BY horario ASC")
-    fun listarRefeicoes(planoId: String): Flow<List<DietaRefeicaoEntity>>
-
-    // ─── Item (alimento) ──────────────────────────────────────
+    // ITEM
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun inserirItem(item: DietaItemEntity)
 
+    @Query("SELECT * FROM dieta_item WHERE refeicaoId = :refeicaoId")
+    fun getItensPorRefeicao(refeicaoId: Int): Flow<List<DietaItemEntity>>
+
     @Delete
     suspend fun deletarItem(item: DietaItemEntity)
-
-    @Query("SELECT * FROM dieta_item WHERE refeicaoId = :refeicaoId")
-    fun listarItens(refeicaoId: String): Flow<List<DietaItemEntity>>
 }
