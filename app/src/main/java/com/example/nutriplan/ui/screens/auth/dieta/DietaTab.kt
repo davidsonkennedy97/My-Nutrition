@@ -1,116 +1,75 @@
 package com.example.nutriplan.ui.screens.dieta
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.nutriplan.ui.theme.PrimaryGreen
 import com.example.nutriplan.ui.viewmodel.DietaViewModel
-import com.example.nutriplan.ui.viewmodel.DietaRefeicao
 
-
+@Suppress("UNUSED_PARAMETER")
 @Composable
-fun RefeicaoSection(
-    planoId: String,
-    viewModel: DietaViewModel
+fun DietaTab(
+    pacienteId: String,
+    isDarkTheme: Boolean,
+    dietaViewModel: DietaViewModel,
+    onNavigateToDietaEditor: (String) -> Unit
 ) {
-    val refeicoes by viewModel.refeicoes
-
-    var mostrarDialogo by remember { mutableStateOf(false) }
-    var nomeRefeicao by remember { mutableStateOf("") }
-    var horarioRefeicao by remember { mutableStateOf("") }
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                "Refeições",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White
-            )
-            IconButton(onClick = { mostrarDialogo = true }) {
-                Icon(Icons.Default.Add, null, tint = PrimaryGreen)
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        if (refeicoes.isEmpty()) {
-            Text(
-                "Nenhuma refeição. Toque em + para adicionar.",
-                color = Color.Gray,
-                style = MaterialTheme.typography.bodySmall
-            )
-        } else {
-            refeicoes.filter { it.planoId == planoId }.forEach { refeicao ->
-                RefeicaoCard(
-                    refeicao = refeicao,
-                    viewModel = viewModel,
-                    onDeletar = { viewModel.deletarRefeicao(refeicao.id) }
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { onNavigateToDietaEditor(pacienteId) },
+                containerColor = PrimaryGreen,
+                contentColor = Color.White
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Adicionar dieta"
                 )
             }
         }
-    }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Plano de Dieta",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDarkTheme) Color.White else Color.Black,
+                    textAlign = TextAlign.Center
+                )
 
-    if (mostrarDialogo) {
-        AlertDialog(
-            onDismissRequest = { mostrarDialogo = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text("Nova Refeição", color = Color.White) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = nomeRefeicao,
-                        onValueChange = { nomeRefeicao = it },
-                        label = { Text("Nome (ex: Café da manhã)", color = Color.LightGray) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryGreen,
-                            unfocusedBorderColor = Color.Gray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = PrimaryGreen
-                        )
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = horarioRefeicao,
-                        onValueChange = { horarioRefeicao = it },
-                        label = { Text("Horário (ex: 07:00)", color = Color.LightGray) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryGreen,
-                            unfocusedBorderColor = Color.Gray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = PrimaryGreen
-                        )
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (nomeRefeicao.isNotBlank()) {
-                        viewModel.criarRefeicao(planoId, nomeRefeicao.trim(), horarioRefeicao.trim())
-                        nomeRefeicao = ""
-                        horarioRefeicao = ""
-                        mostrarDialogo = false
-                    }
-                }) {
-                    Text("Criar", color = PrimaryGreen)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { mostrarDialogo = false }) {
-                    Text("Cancelar", color = Color.Gray)
-                }
+                Text(
+                    text = "Área de dieta do paciente (em construção).",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isDarkTheme) Color.White.copy(alpha = 0.75f) else Color.Black.copy(alpha = 0.75f),
+                    textAlign = TextAlign.Center
+                )
             }
-        )
+        }
     }
 }

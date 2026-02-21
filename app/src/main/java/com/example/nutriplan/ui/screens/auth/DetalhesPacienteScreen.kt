@@ -162,7 +162,7 @@ fun DetalhesPacienteScreen(
                 )
 
                 2 -> DietaTab(
-                    pacienteId = pacienteId,
+                    pacienteId = pacienteData.id,
                     isDarkTheme = isDarkTheme,
                     dietaViewModel = dietaViewModel,
                     onNavigateToDietaEditor = onNavigateToDietaEditor

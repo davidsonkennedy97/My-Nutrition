@@ -63,7 +63,6 @@ dependencies {
 
     // ViewModel Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    // Recomendado para SavedStateHandle + getStateFlow
     implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7")
 
     // Firebase

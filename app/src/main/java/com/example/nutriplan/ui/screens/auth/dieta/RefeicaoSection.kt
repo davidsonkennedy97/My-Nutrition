@@ -28,7 +28,11 @@ fun RefeicaoSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Refeições", style = MaterialTheme.typography.titleMedium, color = Color.White)
+            Text(
+                "Refeições",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
             IconButton(onClick = { mostrarDialogo = true }) {
                 Icon(Icons.Default.Add, null, tint = PrimaryGreen)
             }
@@ -37,7 +41,11 @@ fun RefeicaoSection(
         Spacer(Modifier.height(8.dp))
 
         if (refeicoes.isEmpty()) {
-            Text("Nenhuma refeição. Toque em + para adicionar.", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Nenhuma refeição. Toque em + para adicionar.",
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodySmall
+            )
         } else {
             refeicoes.filter { it.planoId == planoId }.forEach { refeicao ->
                 RefeicaoCard(
@@ -59,7 +67,7 @@ fun RefeicaoSection(
                     OutlinedTextField(
                         value = nomeRefeicao,
                         onValueChange = { nomeRefeicao = it },
-                        label = { Text("Nome", color = Color.LightGray) },
+                        label = { Text("Nome (ex: Café da manhã)", color = Color.LightGray) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryGreen,
@@ -73,7 +81,7 @@ fun RefeicaoSection(
                     OutlinedTextField(
                         value = horarioRefeicao,
                         onValueChange = { horarioRefeicao = it },
-                        label = { Text("Horário", color = Color.LightGray) },
+                        label = { Text("Horário (ex: 07:00)", color = Color.LightGray) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryGreen,
@@ -93,10 +101,14 @@ fun RefeicaoSection(
                         horarioRefeicao = ""
                         mostrarDialogo = false
                     }
-                }) { Text("Criar", color = PrimaryGreen) }
+                }) {
+                    Text("Criar", color = PrimaryGreen)
+                }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarDialogo = false }) { Text("Cancelar", color = Color.Gray) }
+                TextButton(onClick = { mostrarDialogo = false }) {
+                    Text("Cancelar", color = Color.Gray)
+                }
             }
         )
     }

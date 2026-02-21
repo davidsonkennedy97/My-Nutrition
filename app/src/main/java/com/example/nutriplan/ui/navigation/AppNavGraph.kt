@@ -1,5 +1,6 @@
 package com.example.nutriplan.ui.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -20,11 +21,11 @@ import com.example.nutriplan.ui.screens.auth.LoginScreen
 import com.example.nutriplan.ui.screens.auth.RegisterScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatDetailScreen
 import com.example.nutriplan.ui.screens.auth.chat.ChatListScreen
+import com.example.nutriplan.ui.screens.dieta.DietaEditorScreen
+import com.example.nutriplan.ui.screens.dieta.RotinaAlimentosScreen
 import com.example.nutriplan.ui.screens.home.HomeScreen
 import com.example.nutriplan.ui.viewmodel.DietaViewModel
 import kotlinx.coroutines.launch
-
-// Mova Routes para um arquivo separado se quiser, ou deixe aqui sem duplicata
 
 @Composable
 fun AppNavGraph(
@@ -110,6 +111,7 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val conversationId = backStackEntry.arguments?.getString("conversationId") ?: ""
             val participantName = backStackEntry.arguments?.getString("participantName") ?: ""
+
             ChatDetailScreen(
                 conversationId = conversationId,
                 nutritionistName = participantName,
@@ -163,6 +165,7 @@ fun AppNavGraph(
             arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
+
             FormularioPacienteScreen(
                 pacienteId = pacienteId,
                 isDarkTheme = isDarkTheme,
@@ -206,7 +209,11 @@ fun AppNavGraph(
                         navController.navigate("medida_formulario/$id")
                     }
                 },
-                onNavigateToDietaEditor = { pid -> navController.navigate("dieta_editor/$pid") },
+                onNavigateToDietaEditor = { pid ->
+                    val safePid = pid.trim()
+                    if (safePid.isNotEmpty()) navController.navigate("dieta_editor/$safePid")
+                    else navController.navigate("dieta_editor")
+                },
                 onLanguageChange = {
                     val nextLanguage = if (currentLanguage == "pt") "en" else "pt"
                     scope.launch { prefs.setLanguage(nextLanguage) }
@@ -230,6 +237,7 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
             val medidaId = backStackEntry.arguments?.getString("medidaId")
+
             FormularioMedidaScreen(
                 pacienteId = pacienteId,
                 medidaId = medidaId,
@@ -245,6 +253,73 @@ fun AppNavGraph(
                 },
                 onThemeChange = {
                     scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
+                }
+            )
+        }
+
+        // ====== NOVA ROTA: tela de alimentos da rotina ======
+        composable(
+            route = "rotina_alimentos/{rotinaId}?nome={nome}",
+            arguments = listOf(
+                navArgument("rotinaId") { type = NavType.LongType },
+                navArgument("nome") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val rotinaId = backStackEntry.arguments?.getLong("rotinaId") ?: 0L
+            val rotinaNome = backStackEntry.arguments?.getString("nome") ?: ""
+
+            val dietaViewModel: DietaViewModel = viewModel()
+
+            RotinaAlimentosScreen(
+                rotinaId = rotinaId,
+                rotinaNome = rotinaNome,
+                isDarkTheme = isDarkTheme,
+                dietaViewModel = dietaViewModel,
+                onBack = { navController.popBackStack() },
+                onSave = { navController.popBackStack() }
+            )
+        }
+
+        // Rota sem parâmetro (se por algum motivo o ID vier vazio)
+        composable("dieta_editor") {
+            val dietaViewModel: DietaViewModel = viewModel()
+
+            DietaEditorScreen(
+                pacienteId = "",
+                isDarkTheme = isDarkTheme,
+                dietaViewModel = dietaViewModel,
+                onBack = { navController.popBackStack() },
+                onThemeToggle = {
+                    scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
+                },
+                onSave = { navController.popBackStack() },
+                onOpenRotina = { rotinaId, rotinaNome ->
+                    val encoded = Uri.encode(rotinaNome)
+                    navController.navigate("rotina_alimentos/$rotinaId?nome=$encoded")
+                }
+            )
+        }
+
+        // Rota normal com parâmetro
+        composable(
+            route = "dieta_editor/{pacienteId}",
+            arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val pacienteId = backStackEntry.arguments?.getString("pacienteId") ?: ""
+            val dietaViewModel: DietaViewModel = viewModel()
+
+            DietaEditorScreen(
+                pacienteId = pacienteId,
+                isDarkTheme = isDarkTheme,
+                dietaViewModel = dietaViewModel,
+                onBack = { navController.popBackStack() },
+                onThemeToggle = {
+                    scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
+                },
+                onSave = { navController.popBackStack() },
+                onOpenRotina = { rotinaId, rotinaNome ->
+                    val encoded = Uri.encode(rotinaNome)
+                    navController.navigate("rotina_alimentos/$rotinaId?nome=$encoded")
                 }
             )
         }
