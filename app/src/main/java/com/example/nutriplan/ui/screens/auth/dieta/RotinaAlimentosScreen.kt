@@ -130,7 +130,7 @@ fun RotinaAlimentosScreen(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Pesquisar alimento", color = textColor) },
+                placeholder = { Text("Buscar", color = textColor) },
                 singleLine = true,
                 textStyle = TextStyle(color = textColor)
             )
