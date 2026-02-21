@@ -9,30 +9,38 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nutriplan.data.dieta.AlimentoEntity
 import com.example.nutriplan.data.dieta.DietaItemEntity
 import com.example.nutriplan.ui.theme.DarkBackground
 import com.example.nutriplan.ui.theme.DarkSurface
 import com.example.nutriplan.ui.theme.PrimaryGreen
+import com.example.nutriplan.ui.viewmodel.DietaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BuscaAlimentoSheet(
     refeicaoId: Int,
+    viewModel: DietaViewModel = viewModel(),
     onAdicionarItem: (DietaItemEntity) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
-    val todosAlimentos = remember { CsvLoader.carregarAlimentos(context) }
     var busca by remember { mutableStateOf("") }
-    var alimentoSelecionado by remember { mutableStateOf<AlimentoItem?>(null) }
+    var alimentoSelecionado by remember { mutableStateOf<AlimentoEntity?>(null) }
     var quantidade by remember { mutableStateOf("100") }
 
-    val filtrados = remember(busca) {
-        if (busca.length < 2) emptyList()
-        else todosAlimentos.filter { it.nome.contains(busca, ignoreCase = true) }.take(30)
+    // Busca reativa via Room — só busca se tiver 2+ caracteres
+    val filtrados by produceState(
+        initialValue = emptyList<AlimentoEntity>(),
+        key1 = busca
+    ) {
+        if (busca.length < 2) {
+            value = emptyList()
+        } else {
+            viewModel.searchAlimentos(busca).collect { value = it }
+        }
     }
 
     ModalBottomSheet(
@@ -74,13 +82,13 @@ fun BuscaAlimentoSheet(
                 LazyColumn(modifier = Modifier.heightIn(max = 250.dp)) {
                     items(filtrados) { alimento ->
                         Text(
-                            text = alimento.nome,
+                            text = alimento.alimento, // ← era alimento.nome (AlimentoItem)
                             color = Color.White,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     alimentoSelecionado = alimento
-                                    busca = alimento.nome
+                                    busca = alimento.alimento
                                 }
                                 .padding(vertical = 8.dp)
                         )
@@ -98,17 +106,17 @@ fun BuscaAlimentoSheet(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            sel.nome,
+                            sel.alimento, // ← era sel.nome
                             color = Color.White,
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "Kcal: %.1f | Prot: %.1fg | Carb: %.1fg | Gord: %.1fg".format(
-                                sel.kcal * fator,
-                                sel.proteina * fator,
-                                sel.carbo * fator,
-                                sel.gordura * fator
+                                sel.calorias  * fator, // ← era sel.kcal
+                                sel.proteina  * fator,
+                                sel.carboidratos * fator, // ← era sel.carbo
+                                sel.lipidios  * fator  // ← era sel.gordura
                             ),
                             color = Color.LightGray,
                             style = MaterialTheme.typography.bodySmall
@@ -121,7 +129,7 @@ fun BuscaAlimentoSheet(
                 OutlinedTextField(
                     value = quantidade,
                     onValueChange = { quantidade = it },
-                    label = { Text("Quantidade (${sel.unidadePadrao})", color = Color.LightGray) },
+                    label = { Text("Quantidade (${sel.unidadeBase})", color = Color.LightGray) }, // ← era sel.unidadePadrao
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -141,14 +149,14 @@ fun BuscaAlimentoSheet(
                         val f = q / 100f
                         onAdicionarItem(
                             DietaItemEntity(
-                                refeicaoId = refeicaoId,
-                                nomeAlimento = sel.nome,
-                                quantidade = q,
-                                unidade = sel.unidadePadrao,
-                                kcal = sel.kcal * f,
-                                proteina = sel.proteina * f,
-                                carbo = sel.carbo * f,
-                                gordura = sel.gordura * f
+                                refeicaoId   = refeicaoId,
+                                nomeAlimento = sel.alimento,       // ← era sel.nome
+                                quantidade   = q,
+                                unidade      = sel.unidadeBase,    // ← era sel.unidadePadrao
+                                kcal         = sel.calorias.toFloat()  * f, // ← era sel.kcal
+                                proteina     = sel.proteina.toFloat()  * f,
+                                carbo        = sel.carboidratos.toFloat() * f, // ← era sel.carbo
+                                gordura      = sel.lipidios.toFloat()  * f  // ← era sel.gordura
                             )
                         )
                         onDismiss()

@@ -97,17 +97,16 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
         ensureImportFromAssetsStarted()
     }
 
-    /** Importa CSV + JSON de assets/tabela (1x por sessão). */
+    /** Importa CSV + JSON de assets/tabelas (1x por sessão). */
     fun ensureImportFromAssetsStarted() {
         if (importStarted) return
         importStarted = true
-
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val totalAntes = runCatching { alimentoDao.countAll() }.getOrDefault(-1)
                 Log.d(TAG, "Room (antes): total de alimentos = $totalAntes")
 
-                importAllFromAssets(assetDir = "tabela")
+                importAllFromAssets(assetDir = "tabelas") // ✅ CORRIGIDO: era "tabela"
 
                 val totalDepois = runCatching { alimentoDao.countAll() }.getOrDefault(-1)
                 Log.d(TAG, "Room (depois): total de alimentos = $totalDepois")
@@ -120,22 +119,19 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun importAllFromAssets(assetDir: String) {
         val context = getApplication<Application>()
         val files = context.assets.list(assetDir)?.sorted() ?: emptyList()
-
         val csvFiles = files.filter { it.endsWith(".csv", ignoreCase = true) }
         val jsonFiles = files.filter { it.endsWith(".json", ignoreCase = true) }
 
         Log.d(TAG, "Arquivos em assets/$assetDir: ${files.joinToString()}")
         Log.d(TAG, "CSV: ${csvFiles.joinToString()} | JSON: ${jsonFiles.joinToString()}")
 
-        // 1) CSV (um arquivo com problema não pode travar o resto)
+        // 1) CSV
         for (file in csvFiles) {
             try {
                 val origem = file.substringBeforeLast(".").trim().ifEmpty { "Tabela" }
                 val path = "$assetDir/$file"
-
                 val items = parseCsvToFoodEntities(assetPath = path, origem = origem)
                 Log.d(TAG, "CSV $file (origem=$origem): itens lidos=${items.size}")
-
                 if (items.isNotEmpty()) {
                     items.chunked(500).forEach { chunk -> alimentoDao.upsertAll(chunk) }
                 }
@@ -144,15 +140,13 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // 2) JSON (um arquivo com problema não pode travar o resto)
+        // 2) JSON
         for (file in jsonFiles) {
             try {
                 val origem = file.substringBeforeLast(".").trim().ifEmpty { "Tabela" }
                 val path = "$assetDir/$file"
-
                 val items = parseJsonToFoodEntities(assetPath = path, origem = origem)
                 Log.d(TAG, "JSON $file (origem=$origem): itens lidos=${items.size}")
-
                 if (items.isNotEmpty()) {
                     items.chunked(500).forEach { chunk -> alimentoDao.upsertAll(chunk) }
                 }
@@ -202,11 +196,9 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ---------------- CSV PARSER (UTF-8 + fallback ISO-8859-1 + heurística) ----------------
-
     private fun parseCsvToFoodEntities(assetPath: String, origem: String): List<AlimentoEntity> {
         val context = getApplication<Application>()
         val bytes = context.assets.open(assetPath).use { it.readBytes() }
-
         val firstUtf8 = readFirstLine(bytes, Charsets.UTF_8)
         val charset = if (firstUtf8.contains('\uFFFD')) Charsets.ISO_8859_1 else Charsets.UTF_8
 
@@ -214,10 +206,8 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             val firstLineRaw0 = reader.readLine() ?: return emptyList()
             val firstLineRaw = firstLineRaw0.replace("\uFEFF", "")
             val delimiter = detectDelimiter(firstLineRaw)
-
             val header = splitCsvLine(firstLineRaw, delimiter)
                 .map { it.trim().trim('"').replace("\uFEFF", "") }
-
             if (header.isEmpty()) return emptyList()
 
             val firstDataLine = reader.readLine()
@@ -228,18 +218,17 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
                 "alimento", "descricao", "descrição", "descricao do alimento", "descrição do alimento",
                 "nome", "produto", "item", "description", "food"
             )
-
             if (idxNome == null) {
                 idxNome = guessNomeIndex(firstDataCols)
                 Log.w(TAG, "CSV $assetPath: idxNome não encontrado por header. Usando heurística idxNome=$idxNome")
             }
 
-            val idxEnergia = findIndex(header, "energia", "kcal", "calorias", "valor energetico", "valor energético", "energy")
+            val idxEnergia  = findIndex(header, "energia", "kcal", "calorias", "valor energetico", "valor energético", "energy")
             val idxProteina = findIndex(header, "proteina", "proteína", "protein")
             val idxLipidios = findIndex(header, "lipidios", "lipídios", "lipideos", "lipídeos", "gordura", "gorduras", "lipid", "fat")
-            val idxCarbo = findIndex(header, "carboidrato", "carboidratos", "carbo", "carbohydrate", "carbs")
-            val idxQtd = findIndex(header, "quantidade", "porcao", "porção", "qtd", "amount")
-            val idxUn = findIndex(header, "unidade", "medida", "unid", "unit")
+            val idxCarbo    = findIndex(header, "carboidrato", "carboidratos", "carbo", "carbohydrate", "carbs")
+            val idxQtd      = findIndex(header, "quantidade", "porcao", "porção", "qtd", "amount")
+            val idxUn       = findIndex(header, "unidade", "medida", "unid", "unit")
 
             if (idxNome == null) {
                 Log.e(TAG, "CSV $assetPath: não consegui determinar coluna de nome. Header=${header.joinToString()}")
@@ -250,34 +239,32 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
             if (!firstDataLine.isNullOrBlank()) {
                 parseOneCsvRow(
-                    cols = firstDataCols ?: emptyList(),
-                    origem = origem,
-                    idxNome = idxNome,
+                    cols       = firstDataCols ?: emptyList(),
+                    origem     = origem,
+                    idxNome    = idxNome,
                     idxEnergia = idxEnergia,
-                    idxProteina = idxProteina,
-                    idxLipidios = idxLipidios,
-                    idxCarbo = idxCarbo,
-                    idxQtd = idxQtd,
-                    idxUn = idxUn
+                    idxProteina= idxProteina,
+                    idxLipidios= idxLipidios,
+                    idxCarbo   = idxCarbo,
+                    idxQtd     = idxQtd,
+                    idxUn      = idxUn
                 )?.let { list.add(it) }
             }
 
             while (true) {
                 val line = reader.readLine() ?: break
                 if (line.isBlank()) continue
-
                 val cols = splitCsvLine(line, delimiter)
-
                 parseOneCsvRow(
-                    cols = cols,
-                    origem = origem,
-                    idxNome = idxNome,
+                    cols       = cols,
+                    origem     = origem,
+                    idxNome    = idxNome,
                     idxEnergia = idxEnergia,
-                    idxProteina = idxProteina,
-                    idxLipidios = idxLipidios,
-                    idxCarbo = idxCarbo,
-                    idxQtd = idxQtd,
-                    idxUn = idxUn
+                    idxProteina= idxProteina,
+                    idxLipidios= idxLipidios,
+                    idxCarbo   = idxCarbo,
+                    idxQtd     = idxQtd,
+                    idxUn      = idxUn
                 )?.let { list.add(it) }
             }
 
@@ -299,30 +286,27 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
         val nome = col(cols, idxNome)?.trim()?.trim('"').orEmpty()
         if (nome.isBlank()) return null
 
-        val alimentoNorm = normalize(nome)
-
-        val quantidadeBase = parseDouble(col(cols, idxQtd)) ?: 100.0
-        val unidadeFromCsv = col(cols, idxUn)?.trim()?.trim('"')?.ifBlank { null }
-        val unidadeBase = unidadeFromCsv ?: if (alimentoNorm.contains("agua")) "ml" else "g"
-
-        val calorias = parseDouble(col(cols, idxEnergia)) ?: 0.0
-        val proteina = parseDouble(col(cols, idxProteina)) ?: 0.0
-        val lipidios = parseDouble(col(cols, idxLipidios)) ?: 0.0
-        val carbo = parseDouble(col(cols, idxCarbo)) ?: 0.0
-
-        val id = stableIdSha256(origem, alimentoNorm)
+        val alimentoNorm    = normalize(nome)
+        val quantidadeBase  = parseDouble(col(cols, idxQtd)) ?: 100.0
+        val unidadeFromCsv  = col(cols, idxUn)?.trim()?.trim('"')?.ifBlank { null }
+        val unidadeBase     = unidadeFromCsv ?: if (alimentoNorm.contains("agua")) "ml" else "g"
+        val calorias        = parseDouble(col(cols, idxEnergia))  ?: 0.0
+        val proteina        = parseDouble(col(cols, idxProteina)) ?: 0.0
+        val lipidios        = parseDouble(col(cols, idxLipidios)) ?: 0.0
+        val carbo           = parseDouble(col(cols, idxCarbo))    ?: 0.0
+        val id              = stableIdSha256(origem, alimentoNorm)
 
         return AlimentoEntity(
-            id = id,
-            origem = origem,
-            alimento = nome,
+            id           = id,
+            origem       = origem,
+            alimento     = nome,
             alimentoNorm = alimentoNorm,
             quantidadeBase = quantidadeBase,
-            unidadeBase = unidadeBase,
-            proteina = proteina,
-            lipidios = lipidios,
+            unidadeBase  = unidadeBase,
+            proteina     = proteina,
+            lipidios     = lipidios,
             carboidratos = carbo,
-            calorias = calorias
+            calorias     = calorias
         )
     }
 
@@ -331,39 +315,33 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
         var bestIdx = 0
         var bestScore = Int.MIN_VALUE
-
         for (i in 0 until firstDataCols.size) {
             val v = firstDataCols[i].trim().trim('"')
             if (v.isBlank()) continue
-
             val letters = v.count { it.isLetter() }
-            val digits = v.count { it.isDigit() }
-            val score = (letters * 3) - (digits * 2) + minOf(v.length, 40)
-
+            val digits  = v.count { it.isDigit() }
+            val score   = (letters * 3) - (digits * 2) + minOf(v.length, 40)
             if (score > bestScore) {
                 bestScore = score
-                bestIdx = i
+                bestIdx   = i
             }
         }
         return bestIdx
     }
 
     // ---------------- JSON PARSER (genérico, não trava o app) ----------------
-
     private fun parseJsonToFoodEntities(assetPath: String, origem: String): List<AlimentoEntity> {
-        val context = getApplication<Application>()
+        val context  = getApplication<Application>()
         val jsonText = context.assets.open(assetPath).use { input ->
             InputStreamReader(input, Charsets.UTF_8).readText()
         }.replace("\uFEFF", "")
 
         val root = JSONTokener(jsonText).nextValue()
-        val arr = extractJSONArray(root) ?: return emptyList()
-
+        val arr  = extractJSONArray(root) ?: return emptyList()
         val list = ArrayList<AlimentoEntity>(arr.length())
 
         for (i in 0 until arr.length()) {
             val obj = arr.optJSONObject(i) ?: continue
-
             val nome = firstNonBlank(
                 obj.optString("alimento"),
                 obj.optString("descricao"),
@@ -375,22 +353,19 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             )
             if (nome.isBlank()) continue
 
-            val alimentoNorm = normalize(nome)
-            val id = stableIdSha256(origem, alimentoNorm)
-
+            val alimentoNorm   = normalize(nome)
+            val id             = stableIdSha256(origem, alimentoNorm)
             val quantidadeBase = parseDouble(firstNonBlank(
                 obj.optString("quantidadeBase"),
                 obj.optString("quantidade"),
                 obj.optString("amount"),
                 obj.optString("servingSize")
             )) ?: 100.0
-
             val unidadeBase = firstNonBlank(
                 obj.optString("unidadeBase"),
                 obj.optString("unidade"),
                 obj.optString("unit")
             ).ifBlank { "g" }
-
             val calorias = parseDouble(firstNonBlank(
                 obj.optString("kcal"),
                 obj.optString("calorias"),
@@ -398,13 +373,11 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
                 obj.optString("energy"),
                 obj.optString("calories")
             )) ?: 0.0
-
             val proteina = parseDouble(firstNonBlank(
                 obj.optString("proteina"),
                 obj.optString("proteína"),
                 obj.optString("protein")
             )) ?: 0.0
-
             val lipidios = parseDouble(firstNonBlank(
                 obj.optString("lipidios"),
                 obj.optString("lipídios"),
@@ -412,7 +385,6 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
                 obj.optString("fat"),
                 obj.optString("lipid")
             )) ?: 0.0
-
             val carbo = parseDouble(firstNonBlank(
                 obj.optString("carboidratos"),
                 obj.optString("carboidrato"),
@@ -423,28 +395,26 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
             list.add(
                 AlimentoEntity(
-                    id = id,
-                    origem = origem,
-                    alimento = nome,
-                    alimentoNorm = alimentoNorm,
+                    id             = id,
+                    origem         = origem,
+                    alimento       = nome,
+                    alimentoNorm   = alimentoNorm,
                     quantidadeBase = quantidadeBase,
-                    unidadeBase = unidadeBase,
-                    proteina = proteina,
-                    lipidios = lipidios,
-                    carboidratos = carbo,
-                    calorias = calorias
+                    unidadeBase    = unidadeBase,
+                    proteina       = proteina,
+                    lipidios       = lipidios,
+                    carboidratos   = carbo,
+                    calorias       = calorias
                 )
             )
         }
-
         return list
     }
 
     private fun extractJSONArray(root: Any?): JSONArray? {
         return when (root) {
-            is JSONArray -> root
+            is JSONArray  -> root
             is JSONObject -> {
-                // chaves mais comuns
                 val keys = listOf(
                     "foods", "data", "alimentos", "items",
                     "FoundationFoods", "SRLegacyFoods", "SurveyFoods", "BrandedFoods"
@@ -468,7 +438,6 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ---------------- util ----------------
-
     private fun readFirstLine(bytes: ByteArray, charset: java.nio.charset.Charset): String {
         BufferedReader(InputStreamReader(ByteArrayInputStream(bytes), charset)).use { r ->
             return r.readLine() ?: ""
@@ -479,29 +448,24 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun detectDelimiter(line: String): Char {
         val semicolons = line.count { it == ';' }
-        val commas = line.count { it == ',' }
+        val commas     = line.count { it == ',' }
         return if (semicolons >= max(1, commas)) ';' else ','
     }
 
     private fun splitCsvLine(line: String, delimiter: Char): List<String> {
-        val result = ArrayList<String>()
-        val sb = StringBuilder()
+        val result   = ArrayList<String>()
+        val sb       = StringBuilder()
         var inQuotes = false
-        var i = 0
-
+        var i        = 0
         while (i < line.length) {
             val c = line[i]
             when {
-                c == '"' -> inQuotes = !inQuotes
-                c == delimiter && !inQuotes -> {
-                    result.add(sb.toString())
-                    sb.setLength(0)
-                }
-                else -> sb.append(c)
+                c == '"'                    -> inQuotes = !inQuotes
+                c == delimiter && !inQuotes -> { result.add(sb.toString()); sb.setLength(0) }
+                else                        -> sb.append(c)
             }
             i++
         }
-
         result.add(sb.toString())
         return result
     }
@@ -518,26 +482,23 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun findIndex(headers: List<String>, vararg aliases: String): Int? {
         val normHeaders = headers.map { normalize(it) }
-
         for (alias in aliases) {
             val target = normalize(alias)
-            val exact = normHeaders.indexOfFirst { it == target }
+            val exact  = normHeaders.indexOfFirst { it == target }
             if (exact >= 0) return exact
         }
-
         for (alias in aliases) {
-            val target = normalize(alias)
+            val target   = normalize(alias)
             val contains = normHeaders.indexOfFirst { it.contains(target) }
             if (contains >= 0) return contains
         }
-
         return null
     }
 
     // remove acentos SEM regex
     private fun normalize(s: String): String {
         val nfd = Normalizer.normalize(s, Normalizer.Form.NFD)
-        val sb = StringBuilder(nfd.length)
+        val sb  = StringBuilder(nfd.length)
         for (ch in nfd) {
             if (Character.getType(ch) != Character.NON_SPACING_MARK.toInt()) sb.append(ch)
         }
@@ -545,9 +506,8 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun stableIdSha256(origem: String, alimentoNorm: String): Long {
-        val md = MessageDigest.getInstance("SHA-256")
+        val md    = MessageDigest.getInstance("SHA-256")
         val bytes = md.digest("$origem|$alimentoNorm".toByteArray(Charsets.UTF_8))
-
         var value = 0L
         for (i in 0 until 8) {
             value = (value shl 8) or (bytes[i].toLong() and 0xffL)
