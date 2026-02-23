@@ -17,5 +17,6 @@ data class RotinaAlimentoEntity(
     val alimentoId: Long,
     val quantidade: Double,
     val unidade: String,
+    val nomeCustom: String? = null,          // ← nome personalizado pelo usuário
     val createdAt: Long = System.currentTimeMillis()
 )

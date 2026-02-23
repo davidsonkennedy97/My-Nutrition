@@ -22,4 +22,7 @@ interface RotinaDao {
 
     @Delete
     suspend fun delete(rotina: RotinaEntity)
+
+    @Query("UPDATE rotinas SET observacao = :observacao WHERE id = :rotinaId")
+    suspend fun updateObservacao(rotinaId: Long, observacao: String)
 }

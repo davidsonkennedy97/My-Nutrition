@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase
         AlimentoEntity::class,
         RotinaAlimentoEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class DietaDatabase : RoomDatabase() {
