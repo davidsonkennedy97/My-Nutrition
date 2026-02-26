@@ -173,6 +173,63 @@ fun DietaEditorScreen(
                         onDelete = { dietaViewModel.deleteRotina(rotina) }
                     )
                 }
+
+                            // ───────────── GRÁFICO NUTRIENTES ─────────────
+            item {
+                val totais by dietaViewModel.getTotaisByPaciente(pacienteId)
+                    .collectAsState(initial = com.example.nutriplan.data.dieta.TotaisNutricionais(0.0, 0.0, 0.0, 0.0))
+
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(color = PrimaryGreen.copy(alpha = 0.3f))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Análise Nutricional Total",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = bodyTextColor,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                GraficoRosca(
+                    proteina = totais.totalProteina.toFloat(),
+                    lipidios = totais.totalLipidios.toFloat(),
+                    carbo = totais.totalCarboidratos.toFloat()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Total de Calorias
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, PrimaryGreen.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Total de Calorias: ",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = bodyTextColor
+                        )
+                        Text(
+                            text = "${fmt(totais.totalCalorias)} kcal",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryGreen
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
             }
         }
 
