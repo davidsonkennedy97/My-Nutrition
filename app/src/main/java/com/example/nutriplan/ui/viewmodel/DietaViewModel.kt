@@ -9,7 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.nutriplan.data.dieta.AlimentoEntity
 import com.example.nutriplan.data.dieta.DietaDatabase
 import com.example.nutriplan.data.dieta.RotinaAlimentoComDetalhes
-import com.example.nutriplan.data.dieta.RotinaAlimentoEntity
+import com.example.nutriplan.data.dieta.RotinaAlimento
+import com.example.nutriplan.data.dieta.TotaisNutricionaisEntity
 import com.example.nutriplan.data.dieta.RotinaEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -183,6 +184,10 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
     // ======= Itens da Rotina =======
     fun getAlimentosDaRotina(rotinaId: Long): Flow<List<RotinaAlimentoComDetalhes>> =
         rotinaAlimentoDao.getAlimentosDaRotina(rotinaId)
+
+            // ======= Totais por Paciente =======
+    fun getTotaisByPaciente(pacienteId: String): Flow<TotaisNutricionais> =
+        rotinaAlimentoDao.getTotaisByPaciente(pacienteId)
 
     fun updateQuantidadeItem(id: Long, novaQtd: Double) {
         viewModelScope.launch { rotinaAlimentoDao.updateQuantidade(id, novaQtd) }
