@@ -257,7 +257,6 @@ fun AppNavGraph(
             )
         }
 
-        // ====== NOVA ROTA: tela de alimentos da rotina ======
         composable(
             route = "rotina_alimentos/{rotinaId}?nome={nome}",
             arguments = listOf(
@@ -280,7 +279,6 @@ fun AppNavGraph(
             )
         }
 
-        // Rota sem parâmetro (se por algum motivo o ID vier vazio)
         composable("dieta_editor") {
             val dietaViewModel: DietaViewModel = viewModel()
 
@@ -300,7 +298,6 @@ fun AppNavGraph(
             )
         }
 
-        // Rota normal com parâmetro
         composable(
             route = "dieta_editor/{pacienteId}",
             arguments = listOf(navArgument("pacienteId") { type = NavType.StringType })
@@ -316,7 +313,19 @@ fun AppNavGraph(
                 onThemeToggle = {
                     scope.launch { prefs.setThemeMode(if (isDarkTheme) "light" else "dark") }
                 },
-                onSave = { navController.popBackStack() },
+                onSave = {
+                    // Remove dieta_editor da pilha
+                    navController.popBackStack()
+                    // Navega para aba Dieta
+                    navController.navigate("detalhes_paciente/$pacienteId?tabIndex=2") {
+                        popUpTo("detalhes_paciente/$pacienteId") {
+                            inclusive = true
+                            saveState = false
+                        }
+                        launchSingleTop = true
+                        restoreState = false
+                    }
+                },
                 onOpenRotina = { rotinaId, rotinaNome ->
                     val encoded = Uri.encode(rotinaNome)
                     navController.navigate("rotina_alimentos/$rotinaId?nome=$encoded")

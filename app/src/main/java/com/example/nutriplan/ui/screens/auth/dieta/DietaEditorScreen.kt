@@ -621,9 +621,9 @@ private fun AlimentoItemCard(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MacroBolinha(cor = Color(0xFF2196F3), label = "P", valor = item.proteina)
-                MacroBolinha(cor = Color(0xFFFF9800), label = "L", valor = item.lipidios)
-                MacroBolinha(cor = Color(0xFFF44336), label = "C", valor = item.carboidratos)
+                MacroBolinha(cor = Color(0xFF81C784), label = "P", valor = item.proteina)  // Verde Menta 💚
+                MacroBolinha(cor = Color(0xFF90A4AE), label = "L", valor = item.lipidios)  // Cinza Azulado 🩶
+                MacroBolinha(cor = Color(0xFFFF8A80), label = "C", valor = item.carboidratos)  // Vermelho Salmão 🔴
             }
 
             Spacer(modifier = Modifier.height(6.dp))

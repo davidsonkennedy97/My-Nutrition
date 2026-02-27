@@ -1,6 +1,7 @@
 package com.example.nutriplan.ui.screens.dieta
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,8 +22,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -66,10 +65,10 @@ fun RotinaAlimentosScreen(
     onBack: () -> Unit,
     onSave: () -> Unit
 ) {
-    val titulo    = rotinaNome.trim().ifEmpty { "Rotina" }
+    val titulo = rotinaNome.trim().ifEmpty { "Rotina" }
     val textColor = if (isDarkTheme) Color.White else Color.Black
 
-    var query             by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf("") }
     var origemSelecionada by remember { mutableStateOf("Todas") }
 
     val selecionados = remember { mutableStateOf(listOf<AlimentoEntity>()) }
@@ -207,10 +206,10 @@ fun RotinaAlimentosScreen(
                             label = {
                                 Text(
                                     text = when (origem) {
-                                        "IBGE"      -> "IBGE"
-                                        "Taco"      -> "TACO"
+                                        "IBGE" -> "IBGE"
+                                        "Taco" -> "TACO"
                                         "tucunduva" -> "Tucunduva"
-                                        else        -> "Todas"
+                                        else -> "Todas"
                                     },
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (chipSelecionado) FontWeight.Bold else FontWeight.Normal
@@ -301,7 +300,7 @@ private fun AlimentoCard(
     onClick: () -> Unit
 ) {
     val textColor = if (isDarkTheme) Color.White else Color.Black
-    val subColor  = textColor.copy(alpha = 0.75f)
+    val subColor = textColor.copy(alpha = 0.75f)
 
     Surface(
         modifier = Modifier
@@ -315,7 +314,8 @@ private fun AlimentoCard(
         ),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
-    ) { Row(
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
@@ -331,13 +331,25 @@ private fun AlimentoCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "${alimento.origem}  •  ${formatQtd(alimento.quantidadeBase)}${alimento.unidadeBase}",
+                    text = "${alimento.origem} • ${formatQtd(alimento.quantidadeBase)}${alimento.unidadeBase}",
                     color = subColor,
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // Bolinhas coloridas dos macros
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MacroBolinhaBusca(cor = Color(0xFF81C784), label = "P", valor = alimento.proteina)
+                    MacroBolinhaBusca(cor = Color(0xFF90A4AE), label = "G", valor = alimento.lipidios)
+                    MacroBolinhaBusca(cor = Color(0xFFFF8A80), label = "C", valor = alimento.carboidratos)
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "P: ${format1(alimento.proteina)}g  G: ${format1(alimento.lipidios)}g  C: ${format1(alimento.carboidratos)}g  •  ${format1(alimento.calorias)} kcal",
+                    text = "${format1(alimento.calorias)} kcal",
                     color = if (selecionado) PrimaryGreen else textColor,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = if (selecionado) FontWeight.SemiBold else FontWeight.Normal
@@ -351,6 +363,24 @@ private fun AlimentoCard(
                 modifier = Modifier.size(16.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun MacroBolinhaBusca(cor: Color, label: String, valor: Double) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Canvas(modifier = Modifier.size(8.dp)) {
+            drawCircle(color = cor)
+        }
+        Text(
+            text = "$label: ${format1(valor)}g",
+            color = cor,
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.labelSmall
+        )
     }
 }
 

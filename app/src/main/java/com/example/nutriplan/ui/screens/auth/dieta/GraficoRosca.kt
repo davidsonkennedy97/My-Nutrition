@@ -13,9 +13,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import com.example.nutriplan.ui.theme.PrimaryGreen
 
-private val CorProteina = Color(0xFF2196F3)  // Azul
-private val CorLipidios = Color(0xFFFF9800)  // Laranja
-private val CorCarbo = Color(0xFFF44336)     // Vermelho
+private val CorProteina = Color(0xFF81C784)  // Verde Menta Pastel 💚
+private val CorLipidios = Color(0xFF90A4AE)  // Cinza Azulado Pastel 🩶
+private val CorCarbo = Color(0xFFFF8A80)     // Salmão Pastel 🧡
+
 
 @Composable
 fun GraficoRosca(
