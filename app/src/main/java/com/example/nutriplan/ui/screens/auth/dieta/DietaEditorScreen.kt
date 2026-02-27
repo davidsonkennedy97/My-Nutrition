@@ -78,8 +78,7 @@ fun DietaEditorScreen(
     onOpenRotina: (rotinaId: Long, rotinaNome: String) -> Unit
 ) {
     val rotinas by dietaViewModel.getRotinas(pacienteId).collectAsState(initial = emptyList())
-
-    var showDialog     by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
     var rotinaEmEdicao by remember { mutableStateOf<RotinaEntity?>(null) }
 
     Scaffold(
@@ -101,6 +100,7 @@ fun DietaEditorScreen(
                             tint = Color.White
                         )
                     }
+
                     Text(
                         text = "Plano Alimentar",
                         modifier = Modifier.align(Alignment.Center),
@@ -109,6 +109,7 @@ fun DietaEditorScreen(
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
+
                     Row(
                         modifier = Modifier.align(Alignment.CenterEnd),
                         verticalAlignment = Alignment.CenterVertically
@@ -173,6 +174,63 @@ fun DietaEditorScreen(
                         onDelete = { dietaViewModel.deleteRotina(rotina) }
                     )
                 }
+
+                // ───────────── GRÁFICO NUTRIENTES ─────────────
+                item {
+                    val totais by dietaViewModel.getTotaisByPaciente(pacienteId)
+                        .collectAsState(initial = com.example.nutriplan.data.dieta.TotaisNutricionais(0.0, 0.0, 0.0, 0.0))
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = PrimaryGreen.copy(alpha = 0.3f))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Análise Nutricional Total",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = bodyTextColor,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    GraficoRosca(
+                        proteina = totais.totalProteina.toFloat(),
+                        lipidios = totais.totalLipidios.toFloat(),
+                        carbo = totais.totalCarboidratos.toFloat()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Total de Calorias
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, PrimaryGreen.copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Total de Calorias: ",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = bodyTextColor
+                            )
+                            Text(
+                                text = "${fmt(totais.totalCalorias)} kcal",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryGreen
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
 
@@ -184,7 +242,11 @@ fun DietaEditorScreen(
                 onConfirm = { nome, horario ->
                     val editando = rotinaEmEdicao
                     if (editando == null) {
-                        dietaViewModel.addRotina(pacienteId = pacienteId, nome = nome, horario = horario)
+                        dietaViewModel.addRotina(
+                            pacienteId = pacienteId,
+                            nome = nome,
+                            horario = horario
+                        )
                     } else {
                         dietaViewModel.updateRotina(editando.copy(nome = nome, horario = horario))
                     }
@@ -194,7 +256,6 @@ fun DietaEditorScreen(
         }
     }
 }
-
 @Composable
 private fun RotinaCard(
     rotina: RotinaEntity,
@@ -218,7 +279,6 @@ private fun RotinaCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -248,6 +308,7 @@ private fun RotinaCard(
                         )
                     }
                 }
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (alimentos.isNotEmpty()) {
                         IconButton(onClick = { expand = !expand }) {
@@ -288,6 +349,7 @@ private fun RotinaCard(
             Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider(color = PrimaryGreen.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "Observação",
                 style = MaterialTheme.typography.labelSmall,
@@ -295,6 +357,7 @@ private fun RotinaCard(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
+
             OutlinedTextField(
                 value = observacaoText,
                 onValueChange = { novo ->
@@ -333,11 +396,11 @@ private fun AlimentoItemCard(
     onDelete: () -> Unit
 ) {
     val textColor = if (isDarkTheme) Color.White else Color.Black
-    val subColor  = textColor.copy(alpha = 0.6f)
+    val subColor = textColor.copy(alpha = 0.6f)
 
     var editandoNome by remember(item.itemId) { mutableStateOf(false) }
-    var nomeTemp     by remember(item.itemId) { mutableStateOf(item.nomeExibicao) }
-    var qtdText      by remember(item.itemId) { mutableStateOf(formatQtdItem(item.quantidade)) }
+    var nomeTemp by remember(item.itemId) { mutableStateOf(item.nomeExibicao) }
+    var qtdText by remember(item.itemId) { mutableStateOf(formatQtdItem(item.quantidade)) }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -346,7 +409,6 @@ private fun AlimentoItemCard(
         border = BorderStroke(1.dp, PrimaryGreen.copy(alpha = 0.4f))
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -410,6 +472,7 @@ private fun AlimentoItemCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text("Qtd:", color = subColor, style = MaterialTheme.typography.labelSmall)
+
                 BasicTextField(
                     value = qtdText,
                     onValueChange = { novo: String ->
@@ -437,6 +500,7 @@ private fun AlimentoItemCard(
                         }
                     }
                 )
+
                 Text(item.unidade, color = subColor, style = MaterialTheme.typography.labelSmall)
             }
 
@@ -481,7 +545,6 @@ private fun MacroBolinha(cor: Color, label: String, valor: Double) {
         )
     }
 }
-
 @Composable
 private fun RotinaDialog(
     isDarkTheme: Boolean,
@@ -489,38 +552,46 @@ private fun RotinaDialog(
     onDismiss: () -> Unit,
     onConfirm: (nome: String, horario: String) -> Unit
 ) {
-    var nome   by remember { mutableStateOf("") }
-    var hour   by remember { mutableIntStateOf(7) }
+    var nome by remember { mutableStateOf("") }
+    var hour by remember { mutableIntStateOf(7) }
     var minute by remember { mutableIntStateOf(0) }
 
-    fun formatHora(h: Int, m: Int) =
-        "${h.coerceIn(0,23).toString().padStart(2,'0')}:${m.coerceIn(0,59).toString().padStart(2,'0')}"
+    fun formatHora(h: Int, m: Int) = "${h.coerceIn(0,23).toString().padStart(2,'0')}:${m.coerceIn(0,59).toString().padStart(2,'0')}"
 
     LaunchedEffect(rotinaParaEditar?.id) {
         if (rotinaParaEditar != null) {
-            nome   = rotinaParaEditar.nome
+            nome = rotinaParaEditar.nome
             val parts = rotinaParaEditar.horario.split(":")
-            hour   = parts.getOrNull(0)?.toIntOrNull() ?: 7
+            hour = parts.getOrNull(0)?.toIntOrNull() ?: 7
             minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
-        } else { nome = ""; hour = 7; minute = 0 }
+        } else {
+            nome = ""
+            hour = 7
+            minute = 0
+        }
     }
 
-    val dialogBg  = if (isDarkTheme) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background
+    val dialogBg = if (isDarkTheme) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background
     val textColor = if (isDarkTheme) Color.White else Color.Black
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            color = dialogBg, contentColor = textColor,
-            shape = RoundedCornerShape(16.dp), tonalElevation = 2.dp,
+            color = dialogBg,
+            contentColor = textColor,
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 2.dp,
             border = BorderStroke(1.dp, PrimaryGreen.copy(alpha = 0.35f))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = if (rotinaParaEditar == null) "Adicionar Rotina" else "Editar Rotina",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold, color = textColor
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
                 )
+
                 Spacer(modifier = Modifier.height(12.dp))
+
                 OutlinedTextField(
                     value = nome,
                     onValueChange = { novo: String -> nome = novo },
@@ -529,44 +600,80 @@ private fun RotinaDialog(
                     textStyle = TextStyle(color = textColor),
                     modifier = Modifier.fillMaxWidth()
                 )
+
                 Spacer(modifier = Modifier.height(12.dp))
-                Text("Horário", style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold, color = textColor)
+
+                Text(
+                    "Horário",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+
                 Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TimeStepper("Hora",  hour,   0, 23, { hour   = it }, textColor)
-                    Text(":", style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold, color = textColor,
-                        modifier = Modifier.padding(horizontal = 10.dp))
+                    TimeStepper("Hora", hour, 0, 23, { hour = it }, textColor)
+                    Text(
+                        ":",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        modifier = Modifier.padding(horizontal = 10.dp)
+                    )
                     TimeStepper("Min", minute, 0, 59, { minute = it }, textColor)
                 }
+
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Sugestões rápidas", style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold, color = textColor)
+
+                Text(
+                    "Sugestões rápidas",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+
                 Spacer(modifier = Modifier.height(10.dp))
-                Column(modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SugestaoButtonVertical("Café da manhã") { nome = "Café da manhã"; hour = 7;  minute = 0 }
-                    SugestaoButtonVertical("Almoço")        { nome = "Almoço";        hour = 12; minute = 0 }
-                    SugestaoButtonVertical("Lanche")        { nome = "Lanche";        hour = 16; minute = 0 }
-                    SugestaoButtonVertical("Janta")         { nome = "Janta";         hour = 20; minute = 0 }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SugestaoButtonVertical("Café da manhã") { nome = "Café da manhã"; hour = 7; minute = 0 }
+                    SugestaoButtonVertical("Almoço") { nome = "Almoço"; hour = 12; minute = 0 }
+                    SugestaoButtonVertical("Lanche") { nome = "Lanche"; hour = 16; minute = 0 }
+                    SugestaoButtonVertical("Janta") { nome = "Janta"; hour = 20; minute = 0 }
                 }
+
                 Spacer(modifier = Modifier.height(16.dp))
+
                 Button(
-                    onClick = { val n = nome.trim(); if (n.isNotEmpty()) onConfirm(n, formatHora(hour, minute)) },
+                    onClick = {
+                        val n = nome.trim()
+                        if (n.isNotEmpty()) onConfirm(n, formatHora(hour, minute))
+                    },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen, contentColor = Color.White)
-                ) { Text("Confirmar", fontWeight = FontWeight.Bold) }
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryGreen,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("Confirmar", fontWeight = FontWeight.Bold)
+                }
+
                 Spacer(modifier = Modifier.height(10.dp))
+
                 OutlinedButton(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     border = BorderStroke(1.dp, PrimaryGreen)
-                ) { Text("Cancelar", color = PrimaryGreen, fontWeight = FontWeight.Bold) }
+                ) {
+                    Text("Cancelar", color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
@@ -574,27 +681,49 @@ private fun RotinaDialog(
 
 @Composable
 private fun TimeStepper(
-    label: String, value: Int, min: Int, max: Int,
-    onChange: (Int) -> Unit, textColor: Color
+    label: String,
+    value: Int,
+    min: Int,
+    max: Int,
+    onChange: (Int) -> Unit,
+    textColor: Color
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = textColor.copy(alpha = 0.85f))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = textColor.copy(alpha = 0.85f)
+        )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onChange(if (value <= min) max else value - 1) },
-                modifier = Modifier.size(36.dp)) {
-                Text("−", style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold, color = textColor)
+            IconButton(
+                onClick = { onChange(if (value <= min) max else value - 1) },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Text(
+                    "−",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
             }
-            Text(value.toString().padStart(2,'0'),
+            Text(
+                value.toString().padStart(2,'0'),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.width(44.dp),
                 textAlign = TextAlign.Center,
-                color = textColor)
-            IconButton(onClick = { onChange(if (value >= max) min else value + 1) },
-                modifier = Modifier.size(36.dp)) {
-                Text("+", style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold, color = textColor)
+                color = textColor
+            )
+            IconButton(
+                onClick = { onChange(if (value >= max) min else value + 1) },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Text(
+                    "+",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
             }
         }
     }
@@ -613,8 +742,7 @@ private fun SugestaoButtonVertical(text: String, onClick: () -> Unit) {
     }
 }
 
-private fun fmt(v: Double): String =
-    String.format(Locale.US, "%.1f", v).replace(".", ",")
+private fun fmt(v: Double): String = String.format(Locale.US, "%.1f", v).replace(".", ",")
 
 private fun formatQtdItem(v: Double): String =
     if (v == v.toLong().toDouble()) v.toLong().toString()
