@@ -12,14 +12,15 @@ import androidx.room.PrimaryKey
     ]
 )
 data class AlimentoEntity(
-    @PrimaryKey val id: Long,         // ID estável (hash origem+nome)
-    val origem: String,               // ex.: "Taco" (nome do arquivo sem .csv)
-    val alimento: String,             // texto original
-    val alimentoNorm: String,         // sem acento + lowercase
-    val quantidadeBase: Double,       // ex.: 100
-    val unidadeBase: String,          // ex.: g / ml (se não vier, usa heurística/padrão)
+    @PrimaryKey val id: Long,              // ID estável (hash origem+nome)
+    val origem: String,                     // ex.: "Taco" (nome do arquivo sem .csv)
+    val alimento: String,                   // texto original
+    val alimentoNorm: String,               // sem acento + lowercase
+    val quantidadeBase: Double,             // ex.: 100
+    val unidadeBase: String,                // ex.: g / ml
     val proteina: Double,
     val lipidios: Double,
     val carboidratos: Double,
-    val calorias: Double
+    val calorias: Double,
+    val fibras: Double = 0.0               // NOVO CAMPO
 )

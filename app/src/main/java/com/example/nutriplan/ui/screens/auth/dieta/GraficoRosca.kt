@@ -13,9 +13,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import com.example.nutriplan.ui.theme.PrimaryGreen
 
-private val CorProteina = Color(0xFFE53935)
-private val CorLipidios = Color(0xFFFFA000)
-private val CorCarbo    = Color(0xFF1E88E5)
+private val CorProteina = Color(0xFF2196F3)  // Azul
+private val CorLipidios = Color(0xFFFF9800)  // Laranja
+private val CorCarbo = Color(0xFFF44336)     // Vermelho
 
 @Composable
 fun GraficoRosca(
@@ -40,28 +40,28 @@ fun GraficoRosca(
         return
     }
 
-    val pctProteina  = proteina / total * 100
-    val pctLipidios  = lipidios / total * 100
-    val pctCarbo     = carbo    / total * 100
+    val pctProteina = proteina / total * 100
+    val pctLipidios = lipidios / total * 100
+    val pctCarbo = carbo / total * 100
 
     val sweepProteina = proteina / total * 360f
     val sweepLipidios = lipidios / total * 360f
-    val sweepCarbo    = carbo    / total * 360f
+    val sweepCarbo = carbo / total * 360f
 
+    // Centralizar o Row
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(24.dp)
+        horizontalArrangement = Arrangement.Center  // Centralizado
     ) {
-
-        // ── Rosca ─────────────────────────────────────────────
+        // ── Rosca ──────────────────────────────────────────────
         Canvas(
             modifier = Modifier.size(130.dp)
         ) {
             val stroke = Stroke(width = 38.dp.toPx())
             var startAngle = -90f
 
-            // Proteína
+            // Proteína (Azul)
             drawArc(
                 color = CorProteina,
                 startAngle = startAngle,
@@ -71,7 +71,7 @@ fun GraficoRosca(
             )
             startAngle += sweepProteina
 
-            // Lipídios
+            // Lipídios (Laranja)
             drawArc(
                 color = CorLipidios,
                 startAngle = startAngle,
@@ -81,7 +81,7 @@ fun GraficoRosca(
             )
             startAngle += sweepLipidios
 
-            // Carboidratos
+            // Carboidratos (Vermelho)
             drawArc(
                 color = CorCarbo,
                 startAngle = startAngle,
@@ -91,7 +91,9 @@ fun GraficoRosca(
             )
         }
 
-        // ── Legenda ───────────────────────────────────────────
+        Spacer(modifier = Modifier.width(24.dp))
+
+        // ── Legenda ─────────────────────────────────────────────
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             LegendaItem(
                 cor = CorProteina,
@@ -115,7 +117,7 @@ fun GraficoRosca(
     }
 }
 
-// ── Item da legenda ───────────────────────────────────────────
+// ── Item da legenda ─────────────────────────────────────────────
 @Composable
 private fun LegendaItem(
     cor: Color,
@@ -146,9 +148,10 @@ private fun LegendaItem(
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                "%.1fg  (%.1f%%)".format(valor, pct),
+                "%.1fg (%.1f%%)".format(valor, pct),
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = PrimaryGreen  // MUDANÇA AQUI: verde em vez de preto/branco
             )
         }
     }

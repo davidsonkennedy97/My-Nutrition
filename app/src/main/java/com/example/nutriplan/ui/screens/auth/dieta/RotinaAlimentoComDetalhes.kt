@@ -1,32 +1,32 @@
 package com.example.nutriplan.data.dieta
 
-import androidx.room.ColumnInfo
-
 data class RotinaAlimentoComDetalhes(
-    @ColumnInfo(name = "itemId")          val itemId: Long,
-    @ColumnInfo(name = "rotinaId")        val rotinaId: Long,
-    @ColumnInfo(name = "alimentoId")      val alimentoId: Long,
-    @ColumnInfo(name = "quantidade")      val quantidade: Double,
-    @ColumnInfo(name = "unidade")         val unidade: String,
-    @ColumnInfo(name = "nomeCustom")      val nomeCustom: String?,
-    @ColumnInfo(name = "nomeOriginal")    val nomeOriginal: String,
-    @ColumnInfo(name = "quantidadeBase")  val quantidadeBase: Double,
-    @ColumnInfo(name = "proteinaBase")    val proteinaBase: Double,
-    @ColumnInfo(name = "lipidiosBase")    val lipidiosBase: Double,
-    @ColumnInfo(name = "carboidratosBase") val carboidratosBase: Double,
-    @ColumnInfo(name = "caloriasBase")    val caloriasBase: Double
+    val itemId: Long,
+    val rotinaId: Long,
+    val alimentoId: Long,
+    val quantidade: Double,
+    val unidade: String,
+    val nomeCustom: String?,
+    val nomeOriginal: String,
+    val quantidadeBase: Double,
+    val proteinaBase: Double,
+    val lipidiosBase: Double,
+    val carboidratosBase: Double,
+    val caloriasBase: Double,
+    val fibrasBase: Double          // NOVO
 ) {
-    // Nome a exibir: custom se tiver, senão o original
-    val nomeExibicao: String get() = nomeCustom?.takeIf { it.isNotBlank() } ?: nomeOriginal
+    // Fator de conversão: quanto do alimento está sendo usado
+    private val fator: Double
+        get() = if (quantidadeBase > 0) quantidade / quantidadeBase else 0.0
 
-    // Recalcula os macros proporcionalmente à quantidade atual
-    val proteina: Double    get() = calcular(proteinaBase)
-    val lipidios: Double    get() = calcular(lipidiosBase)
-    val carboidratos: Double get() = calcular(carboidratosBase)
-    val calorias: Double    get() = calcular(caloriasBase)
+    // Nome que será exibido na UI
+    val nomeExibicao: String
+        get() = nomeCustom?.takeIf { it.isNotBlank() } ?: nomeOriginal
 
-    private fun calcular(valorBase: Double): Double {
-        if (quantidadeBase <= 0) return 0.0
-        return (valorBase / quantidadeBase) * quantidade
-    }
+    // Valores nutricionais ajustados pela quantidade
+    val proteina: Double get() = proteinaBase * fator
+    val lipidios: Double get() = lipidiosBase * fator
+    val carboidratos: Double get() = carboidratosBase * fator
+    val calorias: Double get() = caloriasBase * fator
+    val fibras: Double get() = fibrasBase * fator    // NOVO
 }

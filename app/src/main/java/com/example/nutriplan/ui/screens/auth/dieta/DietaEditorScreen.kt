@@ -178,7 +178,7 @@ fun DietaEditorScreen(
                 // ───────────── GRÁFICO NUTRIENTES ─────────────
                 item {
                     val totais by dietaViewModel.getTotaisByPaciente(pacienteId)
-                        .collectAsState(initial = com.example.nutriplan.data.dieta.TotaisNutricionais(0.0, 0.0, 0.0, 0.0))
+                        .collectAsState(initial = com.example.nutriplan.data.dieta.TotaisNutricionais(0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
                     Spacer(modifier = Modifier.height(24.dp))
                     HorizontalDivider(color = PrimaryGreen.copy(alpha = 0.3f))
@@ -229,6 +229,91 @@ fun DietaEditorScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ───────────── TABELA DE ANÁLISE NUTRICIONAL ─────────────
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, PrimaryGreen.copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Análise de nutrientes do cardápio",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = bodyTextColor,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+
+                            // Header da tabela
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    "Parâmetro",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = bodyTextColor,
+                                    modifier = Modifier.weight(1.5f)
+                                )
+                                Text(
+                                    "Prescrito",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = bodyTextColor,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                color = PrimaryGreen.copy(alpha = 0.3f)
+                            )
+
+                            // Cálculos adicionais
+                            val carboidratosLivres = totais.totalCarboidratos - totais.totalFibras
+                            val caloriasProteinas = totais.totalProteina * 4.0
+                            val caloriasNaoProteicas = totais.totalCalorias - caloriasProteinas
+                            val kcalNaoProteicaPorGN = if (totais.totalProteina > 0) {
+                                caloriasNaoProteicas / totais.totalProteina
+                            } else 0.0
+                            val densidadeCalorica = if (totais.totalPesoAlimentos > 0) {
+                                totais.totalCalorias / totais.totalPesoAlimentos
+                            } else 0.0
+
+                            // Linhas da tabela
+                            TabelaNutrienteRow("Proteínas totais", "${fmt(totais.totalProteina)}g", bodyTextColor)
+                            TabelaNutrienteRow("Lipídios totais", "${fmt(totais.totalLipidios)}g", bodyTextColor)
+                            TabelaNutrienteRow("Carboidratos totais", "${fmt(totais.totalCarboidratos)}g", bodyTextColor)
+                            TabelaNutrienteRow(
+                                "Fibras totais",
+                                if (totais.totalFibras > 0) "${fmt(totais.totalFibras)}g" else "-",
+                                bodyTextColor
+                            )
+                            TabelaNutrienteRow(
+                                "Carboidratos livres",
+                                if (totais.totalFibras > 0) "${fmt(carboidratosLivres)}g" else "-",
+                                bodyTextColor
+                            )
+                            TabelaNutrienteRow("Calorias totais", "${fmt(totais.totalCalorias)} Kcal", bodyTextColor)
+                            TabelaNutrienteRow(
+                                "Kcal não proteica / gN",
+                                if (totais.totalProteina > 0) "${fmt(kcalNaoProteicaPorGN)} Kcal" else "-",
+                                bodyTextColor
+                            )
+                            TabelaNutrienteRow(
+                                "Densidade calórica",
+                                if (totais.totalPesoAlimentos > 0) "${fmt(densidadeCalorica)} Kcal/g" else "-",
+                                bodyTextColor
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
@@ -256,6 +341,31 @@ fun DietaEditorScreen(
         }
     }
 }
+@Composable
+private fun TabelaNutrienteRow(parametro: String, valor: String, textColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = parametro,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor,
+            modifier = Modifier.weight(1.5f)
+        )
+        Text(
+            text = valor,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = PrimaryGreen,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
 @Composable
 private fun RotinaCard(
     rotina: RotinaEntity,

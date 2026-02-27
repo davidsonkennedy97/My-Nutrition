@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase
         AlimentoEntity::class,
         RotinaAlimentoEntity::class
     ],
-    version = 6,
+    version = 7,  // ← MUDOU DE 6 PARA 7 (novo campo fibras)
     exportSchema = false
 )
 abstract class DietaDatabase : RoomDatabase() {

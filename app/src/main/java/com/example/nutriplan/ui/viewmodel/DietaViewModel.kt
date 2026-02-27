@@ -216,7 +216,6 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             rotinaAlimentoDao.deleteById(id)
         }
     }
-
     // ======= CSV PARSER =======
     private fun parseCsvToFoodEntities(assetPath: String, origem: String): List<AlimentoEntity> {
         val context = getApplication<Application>()
@@ -262,10 +261,11 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             val idxProteina = findIndex(header, "proteina g", "proteina (g)", "proteina..g.", "proteina", "protein g", "protein_g", "protein")
             val idxLipidios = findIndex(header, "lipideos totais g", "lipideos totais (g)", "lipideos..g.", "lipidios", "lipideos", "gordura", "gorduras", "lipid", "fat total", "fat_total_g", "fat")
             val idxCarbo = findIndex(header, "carboidrato g", "carboidrato (g)", "carboidratos..g.", "carboidrato", "carboidratos", "carbo", "carbohydrate g", "carbohydrate_g", "carbohydrate", "carbs")
+            val idxFibras = findIndex(header, "fibra alimentar g", "fibra alimentar (g)", "fibra..g.", "fibras", "fibra", "fibra alimentar", "fiber g", "fiber_g", "fiber", "dietary fiber")  // NOVO
             val idxQtd = findIndex(header, "quantidade", "porcao", "qtd", "amount", "portion")
             val idxUn = findIndex(header, "unidade", "medida", "unid", "unit")
 
-            Log.d(TAG, "[$origem] idx → nome=$idxNome kcal=$idxEnergia prot=$idxProteina lip=$idxLipidios carb=$idxCarbo")
+            Log.d(TAG, "[$origem] idx → nome=$idxNome kcal=$idxEnergia prot=$idxProteina lip=$idxLipidios carb=$idxCarbo fibras=$idxFibras")
 
             if (idxNome == null) {
                 Log.e(TAG, "[$origem] Coluna de nome não encontrada. Header=${header.joinToString()}")
@@ -283,6 +283,7 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
                     idxProteina = idxProteina,
                     idxLipidios = idxLipidios,
                     idxCarbo = idxCarbo,
+                    idxFibras = idxFibras,      // NOVO
                     idxQtd = idxQtd,
                     idxUn = idxUn
                 )?.let { list.add(it) }
@@ -300,6 +301,7 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
                     idxProteina = idxProteina,
                     idxLipidios = idxLipidios,
                     idxCarbo = idxCarbo,
+                    idxFibras = idxFibras,      // NOVO
                     idxQtd = idxQtd,
                     idxUn = idxUn
                 )?.let { list.add(it) }
@@ -317,6 +319,7 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
         idxProteina: Int?,
         idxLipidios: Int?,
         idxCarbo: Int?,
+        idxFibras: Int?,        // NOVO
         idxQtd: Int?,
         idxUn: Int?
     ): AlimentoEntity? {
@@ -324,8 +327,7 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
         if (nome.isBlank()) return null
 
         val alimentoNorm = normalize(nome)
-        val quantidadeBase = parseDouble(col(cols, idxQtd)) ?:
-        100.0
+        val quantidadeBase = parseDouble(col(cols, idxQtd)) ?: 100.0
         val unidadeBase = col(cols, idxUn)?.trim()?.trim('"')?.ifBlank { null }
             ?: if (alimentoNorm.contains("agua")) "ml" else "g"
 
@@ -339,7 +341,8 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
             proteina = parseDouble(col(cols, idxProteina)) ?: 0.0,
             lipidios = parseDouble(col(cols, idxLipidios)) ?: 0.0,
             carboidratos = parseDouble(col(cols, idxCarbo)) ?: 0.0,
-            calorias = parseDouble(col(cols, idxEnergia)) ?: 0.0
+            calorias = parseDouble(col(cols, idxEnergia)) ?: 0.0,
+            fibras = parseDouble(col(cols, idxFibras)) ?: 0.0       // NOVO
         )
     }
 
@@ -432,6 +435,14 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
                     obj.optString("carbs"),
                     obj.optString("carbohydrate"),
                     obj.optString("carbo")
+                )) ?: 0.0,
+                fibras = parseDouble(firstNonBlank(                    // NOVO
+                    obj.optString("fiber_g"),
+                    obj.optString("fibra"),
+                    obj.optString("fibras"),
+                    obj.optString("fibra_alimentar"),
+                    obj.optString("fiber"),
+                    obj.optString("dietary_fiber")
                 )) ?: 0.0
             ))
         }
@@ -451,7 +462,6 @@ class DietaViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun firstNonBlank(vararg values: String?): String =
         values.firstOrNull { !it.isNullOrBlank() }?.trim()?.trim('"') ?: ""
-
     // ======= UTILITÁRIOS =======
     private fun cleanHeader(raw: String): String =
         raw.trim().trim('"').replace("\uFEFF", "")

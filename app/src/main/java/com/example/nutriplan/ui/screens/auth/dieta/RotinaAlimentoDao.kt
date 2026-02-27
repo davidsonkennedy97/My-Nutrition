@@ -10,7 +10,9 @@ data class TotaisNutricionais(
     val totalProteina: Double,
     val totalLipidios: Double,
     val totalCarboidratos: Double,
-    val totalCalorias: Double
+    val totalCalorias: Double,
+    val totalFibras: Double,           // NOVO
+    val totalPesoAlimentos: Double     // NOVO - para calcular densidade calórica
 )
 
 @Dao
@@ -33,7 +35,8 @@ interface RotinaAlimentoDao {
             a.proteina           AS proteinaBase,
             a.lipidios           AS lipidiosBase,
             a.carboidratos       AS carboidratosBase,
-            a.calorias           AS caloriasBase
+            a.calorias           AS caloriasBase,
+            a.fibras             AS fibrasBase
         FROM rotina_alimentos ra
         INNER JOIN alimentos a ON a.id = ra.alimentoId
         WHERE ra.rotinaId = :rotinaId
@@ -45,9 +48,11 @@ interface RotinaAlimentoDao {
     @Query("""
         SELECT
             COALESCE(SUM((a.proteina     / a.quantidadeBase) * ra.quantidade), 0.0) AS totalProteina,
-            COALESCE(SUM((a.lipidios    / a.quantidadeBase) * ra.quantidade), 0.0) AS totalLipidios,
-            COALESCE(SUM((a.carboidratos/ a.quantidadeBase) * ra.quantidade), 0.0) AS totalCarboidratos,
-            COALESCE(SUM((a.calorias    / a.quantidadeBase) * ra.quantidade), 0.0) AS totalCalorias
+            COALESCE(SUM((a.lipidios     / a.quantidadeBase) * ra.quantidade), 0.0) AS totalLipidios,
+            COALESCE(SUM((a.carboidratos / a.quantidadeBase) * ra.quantidade), 0.0) AS totalCarboidratos,
+            COALESCE(SUM((a.calorias     / a.quantidadeBase) * ra.quantidade), 0.0) AS totalCalorias,
+            COALESCE(SUM((a.fibras       / a.quantidadeBase) * ra.quantidade), 0.0) AS totalFibras,
+            COALESCE(SUM(ra.quantidade), 0.0) AS totalPesoAlimentos
         FROM rotina_alimentos ra
         INNER JOIN alimentos a ON a.id = ra.alimentoId
         INNER JOIN rotinas r ON r.id = ra.rotinaId
